@@ -1,0 +1,14 @@
+digraph RBN {
+    // Define nodes with labels
+    0 [label="Gene A"];
+    1 [label="Gene B"];
+    2 [label="Gene C"];
+    3 [label="Gene D"];
+
+    // Define edges (connections between nodes)
+    0 -> 1 [label="influences"];
+    1 -> 2 [label="activates"];
+    2 -> 0 [label="represses"]; 2 -> 3 [label="activates"];
+    3 -> 0 [label="influences"];
+}
+

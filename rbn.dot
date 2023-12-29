@@ -1,0 +1,34 @@
+digraph RBN {
+    0 [label="Distributor 1", func="one"];
+    1 [label="Distributor 2", func="one"];
+
+    2 [label="Ingester 1", func="one"];
+    3 [label="Ingester 2", func="one"];
+
+
+    4 [label="Minio 1", func="75%"];
+    5 [label="Minio 2", func="75%"];
+    6 [label="Minio 3", func="75%"];
+    7 [label="Minio 4", func="75%"];
+
+    8 [label="Health Write", func="one"];
+
+
+
+    2 -> 0;
+    3 -> 0;
+    2 -> 1;
+    3 -> 1;
+
+    4 -> 5; 4 -> 6; 4 -> 7;
+    5 -> 4; 5 -> 6; 5 -> 7;
+    6 -> 4; 6 -> 5; 6 -> 7;
+    7 -> 4; 7 -> 5; 7 -> 6;
+
+    4 -> 2; 5 -> 2; 6 -> 2; 7 -> 2;
+    4 -> 3; 5 -> 3; 6 -> 3; 7 -> 3;
+
+    0 -> 8; 1 -> 8;
+ 
+}
+
