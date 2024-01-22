@@ -31,6 +31,18 @@ def interpret_function(func_name):
     else:
         raise ValueError(f"Unknown function: {func_name}")
 
+# Function to dynamically adjust P values based on network conditions
+def adjust_p_values(node, expanded_network, states, base_p_values):
+    # Example: decrease P value if a node has more than a threshold of failing downstream nodes
+    threshold = 0.5
+    downstream_nodes = expanded_network[node]
+    if downstream_nodes:
+        failing_downstream = sum(not states[down] for down in downstream_nodes) / len(downstream_nodes)
+        if failing_downstream > threshold:
+            return max(base_p_values[node] * (1 - failing_downstream), 0)  # Adjust P value based on failure rate
+    return base_p_values[node]
+
+
 # Load the DOT file
 network = pgv.AGraph("write_path.dot")
 
@@ -95,6 +107,9 @@ for stage in range(num_stages):
     # To store individual node health across runs
     node_health_stats = {node: [] for node in expanded_network}
 
+    # Initialize base P values for each node type (modify as per your actual functions)
+    base_p_values = {node: 1.0 for node in expanded_network}  # Example base P values
+
     health_sum = 0
 
     for run in range(num_runs_per_stage):
@@ -112,9 +127,23 @@ for stage in range(num_stages):
         #print()
         #print(f"Init 0: {states}")
         for step in range(num_steps_per_run):
+            # Dynamically adjust P values at each step
+            current_p_values = {node: adjust_p_values(node, expanded_network, states, base_p_values)
+                                for node in expanded_network}
+
+
+            # Update states based on Boolean functions and adjusted P values
             new_states = states.copy()
             for node in expanded_network:
-                new_states[node] = update_node_state(node, states, functions, expanded_network)
+                if not states[node]:  # Node remains failed if already failed
+                    continue
+                else:
+                    # First, determine state based on Boolean function
+                    new_states[node] = functions[node]([states[neighbor] for neighbor in expanded_network[node]])
+            
+                    # Then, modify state based on current P value (additional layer of logic)
+                    if np.random.rand() >= current_p_values[node]:
+                        new_states[node] = False  # Override state to False based on P value
             states = new_states
             #print(f"Step {step}: {states}")
 
