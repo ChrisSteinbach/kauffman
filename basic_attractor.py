@@ -26,7 +26,7 @@ state_trajectories = odeint(lorenz_system, initial_state, t)
 
 # Plot
 fig = plt.figure()
-ax = fig.gca(projection='3d')
+ax = fig.add_subplot(111, projection='3d')  # Changed this line
 ax.plot(state_trajectories[:,0], state_trajectories[:,1], state_trajectories[:,2])
 ax.set_title('Lorenz Attractor')
 plt.show()

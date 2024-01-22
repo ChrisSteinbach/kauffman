@@ -75,8 +75,21 @@ health_indicator_nodes = [node for node in expanded_network if node.startswith("
 
 # Simulation parameters
 num_stages = 5
-num_runs_per_stage = 20
+num_runs_per_stage = 2000
 num_steps_per_run = 20
+
+# N - Total Number of Nodes
+N = len(expanded_network)
+
+# K - Average Number of Inputs per Node
+total_inputs = sum(len(neighbors) for neighbors in expanded_network.values())
+K = total_inputs / N if N > 0 else 0
+
+# P - Probability of a Node Being 'On'
+# Assuming P is derived from the nature of the Boolean functions
+# This is a simplistic calculation and might need to be adjusted based on your functions
+# Here, we assume P = 0.5 as a placeholder; modify as needed based on your functions
+P = 0.5
 
 for stage in range(num_stages):
     # To store individual node health across runs
@@ -114,10 +127,24 @@ for stage in range(num_stages):
 
     # Calculate average health for this stage
     average_health = health_sum / num_runs_per_stage
-    average_node_health = {node: np.mean(health) for node, health in node_health_stats.items()}
 
-    print(f"Stage {stage}: Average Network Health = {average_health}")
-    print("Average Health of Individual Nodes:")
-    for node, health in average_node_health.items():
-        print(f"  {node}: {health}")
+    # Group and calculate average health by node type
+    type_health_stats = {}
+    for node in node_health_stats:
+        node_type = ' '.join(node.split()[:-1])  # Extract node type from instance name
+        if node_type not in type_health_stats:
+            type_health_stats[node_type] = []
+        type_health_stats[node_type].extend(node_health_stats[node])
 
+    average_type_health = {node_type: np.mean(healths) for node_type, healths in type_health_stats.items()}
+
+    print(f"\nStage {stage}: Average Network Health = {average_health}")
+    print("Average Health of Node Types:")
+    for node_type, health in average_type_health.items():
+        print(f"  {node_type}: {health}")
+
+# At the end of the script, print the Kauffman network parameters
+print(f"\nKauffman Network Parameters:")
+print(f"N (Total Nodes): {N}")
+print(f"K (Average Inputs per Node): {K}")
+print(f"P (Bias in Boolean Functions): {P}")
