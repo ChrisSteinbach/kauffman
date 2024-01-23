@@ -217,5 +217,15 @@ for node_id, label in original_label_map.items():
 for edge in network.edges():
     final_graph.add_edge(edge[0], edge[1])
 
+# Function to create HTML-like label for the info box
+def create_info_box_label(N, K, P):
+    return f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): {N}</TD></TR><TR><TD>K (Avg. Inputs per Node): {K:.2f}</TD></TR><TR><TD>P (Bias in Boolean Functions): {P}</TD></TR></TABLE>>'
+
+
+# Add an info box node
+info_box_label = create_info_box_label(N, K, P)
+final_graph.add_node("info_box", label=info_box_label, shape="note", style="filled", color="lightgrey")
+
+
 # Output the new graph to a file
 final_graph.write("final_network_state.dot")
