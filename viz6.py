@@ -44,7 +44,7 @@ def adjust_p_values(node, expanded_network, states, base_p_values):
 
 
 # Load the DOT file
-network = pgv.AGraph("write_path.dot")
+network = pgv.AGraph("plg_example.dot")
 
 # Expand nodes based on 'instances' attribute and apply functions
 expanded_network = {}
@@ -177,3 +177,39 @@ print(f"\nKauffman Network Parameters:")
 print(f"N (Total Nodes): {N}")
 print(f"K (Average Inputs per Node): {K}")
 print(f"P (Bias in Boolean Functions): {P}")
+
+# Create a mapping from labels to original node identifiers
+original_label_map = {}
+for node in network.nodes():
+    original_label_map[node.name] = node.attr['label']
+
+def get_node_color(health):
+    if health > 0.5:
+        # More green as health increases
+        green_intensity = int(255 * health)
+        red_intensity = 255 - green_intensity
+    else:
+        # More red as health decreases
+        red_intensity = int(255 * (1 - health))
+        green_intensity = 255 - red_intensity
+
+    return f"#{red_intensity:02x}{green_intensity:02x}00"  # RGB color
+
+
+# Create a new Graphviz graph
+final_graph = pgv.AGraph(strict=True, directed=True)
+
+# Add nodes with attributes based on their health, using original node identifiers
+for node_id, label in original_label_map.items():
+    # Determine health color based on average health of the node type
+    node_type = label.split()[0]  # Extract node type from label
+    health = average_type_health.get(node_type, 0.5)  # Default health if not found
+    color = get_node_color(health)  # Calculate graduated color
+    final_graph.add_node(node_id, label=label, color=color, style="filled")
+
+# Add edges using the original node identifiers
+for edge in network.edges():
+    final_graph.add_edge(edge[0], edge[1])
+
+# Output the new graph to a file
+final_graph.write("final_network_state.dot")
