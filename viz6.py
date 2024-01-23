@@ -97,11 +97,8 @@ N = len(expanded_network)
 total_inputs = sum(len(neighbors) for neighbors in expanded_network.values())
 K = total_inputs / N if N > 0 else 0
 
-# P - Probability of a Node Being 'On'
-# Assuming P is derived from the nature of the Boolean functions
-# This is a simplistic calculation and might need to be adjusted based on your functions
-# Here, we assume P = 0.5 as a placeholder; modify as needed based on your functions
-P = 0.5
+total_on_states = 0
+total_evaluations = 0
 
 for stage in range(num_stages):
     # To store individual node health across runs
@@ -146,6 +143,9 @@ for stage in range(num_stages):
                         new_states[node] = False  # Override state to False based on P value
             states = new_states
             #print(f"Step {step}: {states}")
+                    # Update the counters for P value calculation
+            total_on_states += sum(states.values())
+            total_evaluations += len(states)
 
         # Evaluate network health and update individual node health
         #print(f"Final step {step}: {states}")
@@ -176,6 +176,9 @@ for stage in range(num_stages):
 print(f"\nKauffman Network Parameters:")
 print(f"N (Total Nodes): {N}")
 print(f"K (Average Inputs per Node): {K}")
+
+P = total_on_states / total_evaluations if total_evaluations > 0 else 0
+
 print(f"P (Bias in Boolean Functions): {P}")
 
 # Create a mapping from labels to original node identifiers
