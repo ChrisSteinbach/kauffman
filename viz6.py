@@ -199,18 +199,48 @@ def get_node_color(health):
 # Create a new Graphviz graph
 final_graph = pgv.AGraph(strict=True, directed=True)
 
-# Function to create HTML-like label with health status
-def create_html_label(label, health):
-    health_percentage = f"{health * 100:.1f}%"
-    return f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD>{label}</TD></TR><TR><TD><FONT POINT-SIZE="10">{health_percentage}</FONT></TD></TR></TABLE>>'
+# Function to determine if a node is a "Health" node
+def is_health_node(node_label):
+    return node_label.startswith("Health")
 
-# Add nodes with HTML-style labels
+# Function to create HTML-like label with health status and instance count
+def create_html_label(label, health, instance_count):
+    health_percentage = f"{health * 100:.1f}%"
+    return f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>{label}</TD></TR><TR><TD>Health: {health_percentage}</TD></TR><TR><TD>Instances: {instance_count}</TD></TR></TABLE>>'
+
+
+
+# Initialize an empty dictionary to store instance counts
+instance_counts = {}
+
+# Iterate over nodes in the original network to count instances
+for node in network.nodes():
+    node_type = node.attr['label']  # or node.name, depending on your structure
+    # Assuming the number of instances is stored in a node attribute 'instances'
+    instance_count = int(node.attr.get('instances', 1))  # Default to 1 if 'instances' attribute is not found
+    instance_counts[node_type] = instance_count
+
+
+# Add nodes with HTML-style labels including health and instance count
 for node_id, label in original_label_map.items():
-    node_type = label.split()[0]  # Extract node type from label
-    health = average_type_health.get(node_type, 0.5)  # Default health if not found
-    color = get_node_color(health)  # Calculate graduated color
-    html_label = create_html_label(label, health)
-    final_graph.add_node(node_id, label=html_label, color=color, style="filled", shape="rectangle")
+    # Find the instance count by matching the full label
+    instance_count = instance_counts.get(label, 1)  # Default to 1 if not found
+    health = average_type_health.get(label, 0.5)  # Default health if not found
+    fill_color = get_node_color(health)  # Calculate graduated color
+    html_label = create_html_label(label, health, instance_count)
+
+    # Set penwidth and border color based on whether it's a "Health" node
+    if is_health_node(label):
+        penwidth = 3
+        border_color = "black"  # or any other color that stands out
+    else:
+        penwidth = 1
+        border_color = fill_color
+
+    final_graph.add_node(node_id, label=html_label, shape="rectangle", color=border_color, fillcolor=fill_color, style="filled", penwidth=penwidth)
+
+
+
 
 
 # Add edges using the original node identifiers
