@@ -199,13 +199,19 @@ def get_node_color(health):
 # Create a new Graphviz graph
 final_graph = pgv.AGraph(strict=True, directed=True)
 
-# Add nodes with attributes based on their health, using original node identifiers
+# Function to create HTML-like label with health status
+def create_html_label(label, health):
+    health_percentage = f"{health * 100:.1f}%"
+    return f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD>{label}</TD></TR><TR><TD><FONT POINT-SIZE="10">{health_percentage}</FONT></TD></TR></TABLE>>'
+
+# Add nodes with HTML-style labels
 for node_id, label in original_label_map.items():
-    # Determine health color based on average health of the node type
     node_type = label.split()[0]  # Extract node type from label
     health = average_type_health.get(node_type, 0.5)  # Default health if not found
     color = get_node_color(health)  # Calculate graduated color
-    final_graph.add_node(node_id, label=label, color=color, style="filled")
+    html_label = create_html_label(label, health)
+    final_graph.add_node(node_id, label=html_label, color=color, style="filled", shape="rectangle")
+
 
 # Add edges using the original node identifiers
 for edge in network.edges():
