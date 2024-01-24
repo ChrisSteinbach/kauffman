@@ -46,6 +46,36 @@ def adjust_p_values(node, expanded_network, states, base_p_values):
 # Load the DOT file
 network = pgv.AGraph("plg_example.dot")
 
+
+# Create a mapping from labels to original node identifiers
+original_label_map = {}
+for node in network.nodes():
+    original_label_map[node.name] = node.attr['label']
+
+def get_node_color(health):
+    if health > 0.5:
+        # More green as health increases
+        green_intensity = int(255 * health)
+        red_intensity = 255 - green_intensity
+    else:
+        # More red as health decreases
+        red_intensity = int(255 * (1 - health))
+        green_intensity = 255 - red_intensity
+
+    return f"#{red_intensity:02x}{green_intensity:02x}00"  # RGB color
+
+
+# Initialize an empty dictionary to store instance counts
+instance_counts = {}
+
+# Iterate over nodes in the original network to count instances
+for node in network.nodes():
+    node_type = node.attr['label']  # or node.name, depending on your structure
+    # Assuming the number of instances is stored in a node attribute 'instances'
+    instance_count = int(node.attr.get('instances', 1))  # Default to 1 if 'instances' attribute is not found
+    instance_counts[node_type] = instance_count
+
+
 # Expand nodes based on 'instances' attribute and apply functions
 expanded_network = {}
 functions = {}
@@ -100,7 +130,23 @@ K = total_inputs / N if N > 0 else 0
 total_on_states = 0
 total_evaluations = 0
 
+# Function to determine if a node is a "Health" node
+def is_health_node(node_label):
+    return node_label.startswith("Health")
+
+# Function to create HTML-like label with health status and instance count
+def create_html_label(label, health, instance_count):
+    health_percentage = f"{health * 100:.1f}%"
+    return f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>{label}</TD></TR><TR><TD>Health: {health_percentage}</TD></TR><TR><TD>Instances: {instance_count}</TD></TR></TABLE>>'
+
+
+# Initialize a master graph
+master_graph = pgv.AGraph(strict=True, directed=True, compound=True)
+
+
+
 for stage in range(num_stages):
+
     # To store individual node health across runs
     node_health_stats = {node: [] for node in expanded_network}
 
@@ -172,6 +218,37 @@ for stage in range(num_stages):
     for node_type, health in average_type_health.items():
         print(f"  {node_type}: {health}")
 
+    stage_graph = master_graph.add_subgraph(name=f"cluster_{stage}", label=f"Random failures = {stage}")
+    # Add nodes with HTML-style labels including health and instance count
+    for node_id, label in original_label_map.items():
+        # Find the instance count by matching the full label
+        instance_count = instance_counts.get(label, 1)  # Default to 1 if not found
+        health = average_type_health.get(label, 0.5)  # Default health if not found
+        fill_color = get_node_color(health)  # Calculate graduated color
+        html_label = create_html_label(label, health, instance_count)
+
+        # Set penwidth and border color based on whether it's a "Health" node
+        penwidth = 3 if is_health_node(label) else 1
+        border_color = "black" if is_health_node(label) else fill_color
+
+        prefixed_node_id = f"{stage}_{node_id}"  # Prefix node ID with stage number
+        stage_graph.add_node(prefixed_node_id, label=html_label, shape="rectangle", color=border_color, fillcolor=fill_color, style="filled", penwidth=penwidth)
+
+    # Add edges with prefixed node names
+    for edge in network.edges():
+        prefixed_source_id = f"{stage}_{edge[0]}"
+        prefixed_target_id = f"{stage}_{edge[1]}"
+        stage_graph.add_edge(prefixed_source_id, prefixed_target_id)
+
+        # Add an invisible node to this subgraph
+    invisible_node_id = f"invisible_{stage}"
+    stage_graph.add_node(invisible_node_id, style="invis")
+
+# Add invisible edges between the invisible nodes to influence subgraph order
+for stage in range(num_stages - 1):
+    master_graph.add_edge(f"invisible_{stage}", f"invisible_{stage + 1}", style="invis")
+
+
 # At the end of the script, print the Kauffman network parameters
 print(f"\nKauffman Network Parameters:")
 print(f"N (Total Nodes): {N}")
@@ -181,47 +258,10 @@ P = total_on_states / total_evaluations if total_evaluations > 0 else 0
 
 print(f"P (Bias in Boolean Functions): {P}")
 
-# Create a mapping from labels to original node identifiers
-original_label_map = {}
-for node in network.nodes():
-    original_label_map[node.name] = node.attr['label']
-
-def get_node_color(health):
-    if health > 0.5:
-        # More green as health increases
-        green_intensity = int(255 * health)
-        red_intensity = 255 - green_intensity
-    else:
-        # More red as health decreases
-        red_intensity = int(255 * (1 - health))
-        green_intensity = 255 - red_intensity
-
-    return f"#{red_intensity:02x}{green_intensity:02x}00"  # RGB color
-
 
 # Create a new Graphviz graph
 final_graph = pgv.AGraph(strict=True, directed=True)
 
-# Function to determine if a node is a "Health" node
-def is_health_node(node_label):
-    return node_label.startswith("Health")
-
-# Function to create HTML-like label with health status and instance count
-def create_html_label(label, health, instance_count):
-    health_percentage = f"{health * 100:.1f}%"
-    return f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>{label}</TD></TR><TR><TD>Health: {health_percentage}</TD></TR><TR><TD>Instances: {instance_count}</TD></TR></TABLE>>'
-
-
-
-# Initialize an empty dictionary to store instance counts
-instance_counts = {}
-
-# Iterate over nodes in the original network to count instances
-for node in network.nodes():
-    node_type = node.attr['label']  # or node.name, depending on your structure
-    # Assuming the number of instances is stored in a node attribute 'instances'
-    instance_count = int(node.attr.get('instances', 1))  # Default to 1 if 'instances' attribute is not found
-    instance_counts[node_type] = instance_count
 
 
 # Add nodes with HTML-style labels including health and instance count
@@ -243,9 +283,6 @@ for node_id, label in original_label_map.items():
     final_graph.add_node(node_id, label=html_label, shape="rectangle", color=border_color, fillcolor=fill_color, style="filled", penwidth=penwidth)
 
 
-
-
-
 # Add edges using the original node identifiers
 for edge in network.edges():
     final_graph.add_edge(edge[0], edge[1])
@@ -258,7 +295,12 @@ def create_info_box_label(N, K, P):
 # Add an info box node
 info_box_label = create_info_box_label(N, K, P)
 final_graph.add_node("info_box", label=info_box_label, shape="note", style="filled", color="lightgrey")
+master_graph.add_node("info_box", label=info_box_label, shape="note", style="filled", color="lightgrey")
 
 
 # Output the new graph to a file
 final_graph.write("final_network_state.dot")
+
+
+# Output the combined master graph to a file
+master_graph.write("combined_stages.dot")
