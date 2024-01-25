@@ -244,10 +244,6 @@ for stage in range(num_stages):
     invisible_node_id = f"invisible_{stage}"
     stage_graph.add_node(invisible_node_id, style="invis")
 
-# Add invisible edges between the invisible nodes to influence subgraph order
-for stage in range(num_stages - 1):
-    master_graph.add_edge(f"invisible_{stage}", f"invisible_{stage + 1}", style="invis")
-
 
 # At the end of the script, print the Kauffman network parameters
 print(f"\nKauffman Network Parameters:")
@@ -259,34 +255,6 @@ P = total_on_states / total_evaluations if total_evaluations > 0 else 0
 print(f"P (Bias in Boolean Functions): {P}")
 
 
-# Create a new Graphviz graph
-final_graph = pgv.AGraph(strict=True, directed=True)
-
-
-
-# Add nodes with HTML-style labels including health and instance count
-for node_id, label in original_label_map.items():
-    # Find the instance count by matching the full label
-    instance_count = instance_counts.get(label, 1)  # Default to 1 if not found
-    health = average_type_health.get(label, 0.5)  # Default health if not found
-    fill_color = get_node_color(health)  # Calculate graduated color
-    html_label = create_html_label(label, health, instance_count)
-
-    # Set penwidth and border color based on whether it's a "Health" node
-    if is_health_node(label):
-        penwidth = 3
-        border_color = "black"  # or any other color that stands out
-    else:
-        penwidth = 1
-        border_color = fill_color
-
-    final_graph.add_node(node_id, label=html_label, shape="rectangle", color=border_color, fillcolor=fill_color, style="filled", penwidth=penwidth)
-
-
-# Add edges using the original node identifiers
-for edge in network.edges():
-    final_graph.add_edge(edge[0], edge[1])
-
 # Function to create HTML-like label for the info box
 def create_info_box_label(N, K, P):
     return f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): {N}</TD></TR><TR><TD>K (Avg. Inputs per Node): {K:.2f}</TD></TR><TR><TD>P (Bias in Boolean Functions): {P}</TD></TR></TABLE>>'
@@ -294,13 +262,43 @@ def create_info_box_label(N, K, P):
 
 # Add an info box node
 info_box_label = create_info_box_label(N, K, P)
-final_graph.add_node("info_box", label=info_box_label, shape="note", style="filled", color="lightgrey")
 master_graph.add_node("info_box", label=info_box_label, shape="note", style="filled", color="lightgrey")
 
 
-# Output the new graph to a file
-final_graph.write("final_network_state.dot")
-
-
 # Output the combined master graph to a file
-master_graph.write("combined_stages.dot")
+master_graph_dot = master_graph.to_string()
+
+# Get the DOT representation as a string
+dot_content = master_graph.to_string()
+
+# Dynamically generate the alignment snippet based on the number of stages
+num_stages = 5  # Example, replace with the actual number of stages
+
+# Create align_X node declarations with style=invis
+align_node_declarations = '\n\t\t'.join([f"align_{i} [style=invis];" for i in range(num_stages)])
+
+# Create align_X -> align_Y edges with style=invis
+align_edges = ' -> '.join([f"align_{i}" for i in range(num_stages)]) + ' [style=invis];'
+
+# Complete alignment snippet
+alignment_snippet = f"""
+\tsubgraph align {{
+        \tgraph [rankdir=LR];
+        \t{align_node_declarations}
+        \trank=same {align_edges}
+    }}
+"""
+
+# Edges from align_X to invisible_X
+for i in range(num_stages):
+    alignment_snippet += f"\n\talign_{i} -> invisible_{i} [style=invis];"
+
+
+# Insert the alignment snippet before the last closing brace
+modified_dot_content = master_graph_dot.rsplit("}", 1)[0] + alignment_snippet + "}\n"
+
+
+# Writing to the file
+with open("combined_stages.dot", "w") as file:
+    file.write(modified_dot_content)
+
