@@ -3,22 +3,29 @@ import numpy as np
 import pygraphviz as pgv
 import networkx as nx
 
+# Function to determine if a node is a "Health" node
+def is_health_node(node_label):
+    return node_label.startswith("Health")
+
 # Load the DOT file
 network = pgv.AGraph("plg_example.dot")
 
 # Step 1: Identify unique node types
-node_types = set(node.attr['label'] for node in network.nodes())
+# Assume network is your PyGraphviz graph
+node_types = [node.attr['label'] for node in network.nodes() if not is_health_node(node.attr['label'])]
+node_type_set = set(node_types)  # To check for existence efficiently
 
 # Step 2: Initialize matrix
 type_index = {node_type: i for i, node_type in enumerate(node_types)}
 matrix_size = len(node_types)
 adj_matrix = np.zeros((matrix_size, matrix_size), dtype=int)
 
-# Step 3: Fill the matrix
+# Populate the adjacency matrix, excluding health nodes
 for edge in network.edges():
     source_type = edge[0].attr['label']
     target_type = edge[1].attr['label']
-    adj_matrix[type_index[source_type], type_index[target_type]] += 1
+    if source_type in node_type_set and target_type in node_type_set:
+        adj_matrix[type_index[source_type], type_index[target_type]] = 1
 
 # Assume adj_matrix is your adjacency matrix and node_types is a list of node types
 in_degree_scores = {node_type: 0 for node_type in node_types}
