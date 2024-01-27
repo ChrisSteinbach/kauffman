@@ -2,20 +2,26 @@ import pygraphviz as pgv
 import numpy as np
 import random
 
+
 # Define the Boolean functions
 def all_func(inputs):
     return all(inputs)
 
+
 def none_func(inputs):
     return not any(inputs)
+
 
 def one_func(inputs):
     return any(inputs)
 
+
 def percentage_func(percentage):
     def perc_func(inputs):
         return sum(inputs) >= len(inputs) * (percentage / 100)
+
     return perc_func
+
 
 # Function to interpret the function name from the DOT file
 def interpret_function(func_name):
@@ -31,6 +37,7 @@ def interpret_function(func_name):
     else:
         raise ValueError(f"Unknown function: {func_name}")
 
+
 # Function to dynamically adjust P values based on network conditions
 def adjust_p_values(node, expanded_network, states, base_p_values):
     # Example: decrease P value if a node has more than a threshold of failing downstream nodes
@@ -42,17 +49,19 @@ def adjust_p_values(node, expanded_network, states, base_p_values):
             return max(base_p_values[node] * (1 - failing_downstream), 0)  # Adjust P value based on failure rate
     return base_p_values[node]
 
+
 def purge_low_attractor_counts(attractor_counts):
-   return {attractor: count for attractor, count in attractor_counts.items() if count >= purge_threshold}
+    return {attractor: count for attractor, count in attractor_counts.items() if count >= purge_threshold}
+
 
 # Load the DOT file
 network = pgv.AGraph("plg_example.dot")
-
 
 # Create a mapping from labels to original node identifiers
 original_label_map = {}
 for node in network.nodes():
     original_label_map[node.name] = node.attr['label']
+
 
 def get_node_color(health):
     if health > 0.5:
@@ -77,7 +86,6 @@ for node in network.nodes():
     instance_count = int(node.attr.get('instances', 1))  # Default to 1 if 'instances' attribute is not found
     instance_counts[node_type] = instance_count
 
-
 # Expand nodes based on 'instances' attribute and apply functions
 expanded_network = {}
 functions = {}
@@ -96,10 +104,11 @@ for edge in network.edges():
     for source in source_instances:
         for target in target_instances:
             if source != target:  # Exclude self-connections
-              expanded_network[source].append(target)
+                expanded_network[source].append(target)
 
 # Initialize states to True (healthy)
-initial_states = {node: True for node in expanded_network}
+all_healthy_states = {node: True for node in expanded_network}
+
 
 def update_node_state(node, states, functions, expanded_network):
     # If the node is already unhealthy, it remains unhealthy
@@ -110,9 +119,11 @@ def update_node_state(node, states, functions, expanded_network):
     inputs = [states[neighbor] for neighbor in expanded_network[node]]
     return functions[node](inputs)
 
+
 # Function to evaluate network health
 def evaluate_network_health(states, health_indicator_nodes):
     return sum(states[node] for node in health_indicator_nodes) / len(health_indicator_nodes)
+
 
 # Identify health indicator nodes based on their labels
 health_indicator_nodes = [node for node in expanded_network if node.startswith("Health")]
@@ -122,7 +133,6 @@ num_stages = 10
 num_runs_per_stage = 2000
 num_steps_per_run = 20
 recovery_period = 12
-
 
 # N - Total Number of Nodes
 N = len(expanded_network)
@@ -135,9 +145,11 @@ MAX_K = max(len(connections) for connections in expanded_network.values())
 total_on_states = 0
 total_evaluations = 0
 
+
 # Function to determine if a node is a "Health" node
 def is_health_node(node_label):
     return node_label.startswith("Health")
+
 
 # Function to create HTML-like label with health status and instance count
 def create_html_label(label, health, instance_count):
@@ -147,7 +159,6 @@ def create_html_label(label, health, instance_count):
 
 # Initialize a master graph
 master_graph = pgv.AGraph(strict=True, directed=True, compound=True)
-
 
 # Dictionary to store attractors and their counts
 attractor_counts = {}
@@ -165,7 +176,7 @@ for stage in range(num_stages):
     health_sum = 0
 
     for run in range(num_runs_per_stage):
-        states = initial_states.copy()
+        states = all_healthy_states.copy()
 
         # Prepare a list of nodes that can potentially fail, excluding health indicators
         potential_nodes_to_fail = [node for node in expanded_network if node not in health_indicator_nodes]
@@ -176,14 +187,13 @@ for stage in range(num_stages):
             states[node] = False
 
         # Run the simulation for this stage
-        #print()
-        #print(f"Init 0: {states}")
+        # print()
+        # print(f"Init 0: {states}")
         failed_periods = {node: 0 for node in expanded_network}  # Track failed periods for each node
         for step in range(num_steps_per_run):
             # Dynamically adjust P values at each step
             current_p_values = {node: adjust_p_values(node, expanded_network, states, base_p_values)
                                 for node in expanded_network}
-
 
             # Update states based on Boolean functions and adjusted P values
             new_states = states.copy()
@@ -193,13 +203,13 @@ for stage in range(num_stages):
                 else:
                     # First, determine state based on Boolean function
                     new_states[node] = functions[node]([states[neighbor] for neighbor in expanded_network[node]])
-            
+
                     # Then, modify state based on current P value (additional layer of logic)
                     if np.random.rand() >= current_p_values[node]:
                         new_states[node] = False  # Override state to False based on P value
             states = new_states
-            #print(f"Step {step}: {states}")
-                    # Update the counters for P value calculation
+            # print(f"Step {step}: {states}")
+            # Update the counters for P value calculation
             total_on_states += sum(states.values())
             total_evaluations += len(states)
 
@@ -212,14 +222,13 @@ for stage in range(num_stages):
                         states[node] = True  # or some recovery condition
                         failed_periods[node] = 0  # Reset failed period
 
-
         # Evaluate network health and update individual node health
-        #print(f"Final step {step}: {states}")
+        # print(f"Final step {step}: {states}")
         health_sum += evaluate_network_health(states, health_indicator_nodes)
-        #print(f"Health sum {health_sum}")
+        # print(f"Health sum {health_sum}")
         for node in expanded_network:
             node_health_stats[node].append(states[node])
-                # Update attractor counts
+            # Update attractor counts
 
         attractor_state = frozenset(states.items())
         attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
@@ -227,7 +236,6 @@ for stage in range(num_stages):
         # Prune less frequent attractors periodically
         if (stage * num_runs_per_stage + run) % prune_interval == 0:
             attractor_counts = purge_low_attractor_counts(attractor_counts)
-
 
     # Calculate average health for this stage
     average_health = health_sum / num_runs_per_stage
@@ -261,7 +269,8 @@ for stage in range(num_stages):
         border_color = "black" if is_health_node(label) else fill_color
 
         prefixed_node_id = f"{stage}_{node_id}"  # Prefix node ID with stage number
-        stage_graph.add_node(prefixed_node_id, label=html_label, shape="rectangle", color=border_color, fillcolor=fill_color, style="filled", penwidth=penwidth)
+        stage_graph.add_node(prefixed_node_id, label=html_label, shape="rectangle", color=border_color,
+                             fillcolor=fill_color, style="filled", penwidth=penwidth)
 
     # Add edges with prefixed node names
     for edge in network.edges():
@@ -272,7 +281,6 @@ for stage in range(num_stages):
         # Add an invisible node to this subgraph
     invisible_node_id = f"invisible_{stage}"
     stage_graph.add_node(invisible_node_id, style="invis")
-
 
 # At the end of the script, print the Kauffman network parameters
 print(f"\nKauffman Network Parameters:")
@@ -305,7 +313,6 @@ def create_info_box_label(N, K, P):
 info_box_label = create_info_box_label(N, K, P)
 master_graph.add_node("info_box", label=info_box_label, shape="note", style="filled", color="lightgrey")
 
-
 # Output the combined master graph to a file
 master_graph_dot = master_graph.to_string()
 
@@ -333,12 +340,9 @@ alignment_snippet = f"""
 for i in range(num_stages):
     alignment_snippet += f"\n\talign_{i} -> invisible_{i} [style=invis];"
 
-
 # Insert the alignment snippet before the last closing brace
 modified_dot_content = master_graph_dot.rsplit("}", 1)[0] + alignment_snippet + "}\n"
-
 
 # Writing to the file
 with open("combined_stages.dot", "w") as file:
     file.write(modified_dot_content)
-

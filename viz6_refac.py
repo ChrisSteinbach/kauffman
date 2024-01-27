@@ -2,35 +2,6 @@ import pygraphviz as pgv
 import numpy as np
 import random
 
-# Define the Boolean functions
-def all_func(inputs):
-    return all(inputs)
-
-def none_func(inputs):
-    return not any(inputs)
-
-def one_func(inputs):
-    return any(inputs)
-
-def percentage_func(percentage):
-    def perc_func(inputs):
-        return sum(inputs) >= len(inputs) * (percentage / 100)
-    return perc_func
-
-# Function to interpret the function name from the DOT file
-def interpret_function(func_name):
-    if func_name == "all":
-        return all_func
-    elif func_name == "none":
-        return none_func
-    elif func_name == "one":
-        return one_func
-    elif "%" in func_name:
-        percentage = float(func_name.replace("%", ""))
-        return percentage_func(percentage)
-    else:
-        raise ValueError(f"Unknown function: {func_name}")
-
 # Function to dynamically adjust P values based on network conditions
 def adjust_p_values(node, expanded_network, states, base_p_values):
     # Example: decrease P value if a node has more than a threshold of failing downstream nodes
@@ -65,38 +36,6 @@ def get_node_color(health):
         green_intensity = 255 - red_intensity
 
     return f"#{red_intensity:02x}{green_intensity:02x}00"  # RGB color
-
-
-# Initialize an empty dictionary to store instance counts
-instance_counts = {}
-
-# Iterate over nodes in the original network to count instances
-for node in network.nodes():
-    node_type = node.attr['label']  # or node.name, depending on your structure
-    # Assuming the number of instances is stored in a node attribute 'instances'
-    instance_count = int(node.attr.get('instances', 1))  # Default to 1 if 'instances' attribute is not found
-    instance_counts[node_type] = instance_count
-
-
-# Expand nodes based on 'instances' attribute and apply functions
-expanded_network = {}
-functions = {}
-for node in network.nodes():
-    num_instances = int(node.attr['instances'])
-    func = interpret_function(node.attr['func'])
-    for i in range(1, num_instances + 1):
-        instance_name = f"{node.attr['label']} {i}"
-        expanded_network[instance_name] = []
-        functions[instance_name] = func
-
-# Expand connections based on expanded nodes
-for edge in network.edges():
-    source_instances = [n for n in expanded_network if n.startswith(edge[0].attr['label'])]
-    target_instances = [n for n in expanded_network if n.startswith(edge[1].attr['label'])]
-    for source in source_instances:
-        for target in target_instances:
-            if source != target:  # Exclude self-connections
-              expanded_network[source].append(target)
 
 # Initialize states to True (healthy)
 initial_states = {node: True for node in expanded_network}
