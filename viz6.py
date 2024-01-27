@@ -118,9 +118,11 @@ def evaluate_network_health(states, health_indicator_nodes):
 health_indicator_nodes = [node for node in expanded_network if node.startswith("Health")]
 
 # Simulation parameters
-num_stages = 5
+num_stages = 10
 num_runs_per_stage = 2000
-num_steps_per_run = 100
+num_steps_per_run = 20
+recovery_period = 12
+
 
 # N - Total Number of Nodes
 N = len(expanded_network)
@@ -128,6 +130,7 @@ N = len(expanded_network)
 # K - Average Number of Inputs per Node
 total_inputs = sum(len(neighbors) for neighbors in expanded_network.values())
 K = total_inputs / N if N > 0 else 0
+MAX_K = max(len(connections) for connections in expanded_network.values())
 
 total_on_states = 0
 total_evaluations = 0
@@ -150,7 +153,6 @@ master_graph = pgv.AGraph(strict=True, directed=True, compound=True)
 attractor_counts = {}
 purge_threshold = 10  # Threshold for minimum occurrences to consider as potential attractor
 prune_interval = 1000  # Prune after every 1000 runs
-
 
 for stage in range(num_stages):
 
@@ -176,6 +178,7 @@ for stage in range(num_stages):
         # Run the simulation for this stage
         #print()
         #print(f"Init 0: {states}")
+        failed_periods = {node: 0 for node in expanded_network}  # Track failed periods for each node
         for step in range(num_steps_per_run):
             # Dynamically adjust P values at each step
             current_p_values = {node: adjust_p_values(node, expanded_network, states, base_p_values)
@@ -199,6 +202,16 @@ for stage in range(num_stages):
                     # Update the counters for P value calculation
             total_on_states += sum(states.values())
             total_evaluations += len(states)
+
+            # Update failed periods and attempt recovery
+            for node in expanded_network:
+                if states[node] == False:
+                    failed_periods[node] += 1
+                    if failed_periods[node] >= recovery_period:
+                        # Attempt recovery, can be a simple flip or based on more complex logic
+                        states[node] = True  # or some recovery condition
+                        failed_periods[node] = 0  # Reset failed period
+
 
         # Evaluate network health and update individual node health
         #print(f"Final step {step}: {states}")
@@ -265,6 +278,7 @@ for stage in range(num_stages):
 print(f"\nKauffman Network Parameters:")
 print(f"N (Total Nodes): {N}")
 print(f"K (Average Inputs per Node): {K}")
+print(f"K (Max Inputs per Node): {MAX_K}")
 
 P = total_on_states / total_evaluations if total_evaluations > 0 else 0
 
@@ -299,7 +313,6 @@ master_graph_dot = master_graph.to_string()
 dot_content = master_graph.to_string()
 
 # Dynamically generate the alignment snippet based on the number of stages
-num_stages = 5  # Example, replace with the actual number of stages
 
 # Create align_X node declarations with style=invis
 align_node_declarations = '\n\t\t'.join([f"align_{i} [style=invis];" for i in range(num_stages)])
