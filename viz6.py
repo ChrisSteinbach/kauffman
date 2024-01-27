@@ -42,6 +42,8 @@ def adjust_p_values(node, expanded_network, states, base_p_values):
             return max(base_p_values[node] * (1 - failing_downstream), 0)  # Adjust P value based on failure rate
     return base_p_values[node]
 
+def purge_low_attractor_counts(attractor_counts):
+   return {attractor: count for attractor, count in attractor_counts.items() if count >= purge_threshold}
 
 # Load the DOT file
 network = pgv.AGraph("plg_example.dot")
@@ -118,7 +120,7 @@ health_indicator_nodes = [node for node in expanded_network if node.startswith("
 # Simulation parameters
 num_stages = 5
 num_runs_per_stage = 2000
-num_steps_per_run = 20
+num_steps_per_run = 100
 
 # N - Total Number of Nodes
 N = len(expanded_network)
@@ -143,6 +145,11 @@ def create_html_label(label, health, instance_count):
 # Initialize a master graph
 master_graph = pgv.AGraph(strict=True, directed=True, compound=True)
 
+
+# Dictionary to store attractors and their counts
+attractor_counts = {}
+purge_threshold = 10  # Threshold for minimum occurrences to consider as potential attractor
+prune_interval = 1000  # Prune after every 1000 runs
 
 
 for stage in range(num_stages):
@@ -199,6 +206,15 @@ for stage in range(num_stages):
         #print(f"Health sum {health_sum}")
         for node in expanded_network:
             node_health_stats[node].append(states[node])
+                # Update attractor counts
+
+        attractor_state = frozenset(states.items())
+        attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
+
+        # Prune less frequent attractors periodically
+        if (stage * num_runs_per_stage + run) % prune_interval == 0:
+            attractor_counts = purge_low_attractor_counts(attractor_counts)
+
 
     # Calculate average health for this stage
     average_health = health_sum / num_runs_per_stage
@@ -253,6 +269,17 @@ print(f"K (Average Inputs per Node): {K}")
 P = total_on_states / total_evaluations if total_evaluations > 0 else 0
 
 print(f"P (Bias in Boolean Functions): {P}")
+
+# Sorting attractors by their count in descending order
+attractor_counts = purge_low_attractor_counts(attractor_counts)
+sorted_attractors = sorted(attractor_counts.items(), key=lambda item: item[1], reverse=True)
+
+# Reporting
+print("Significant Attractors and their occurrence counts:")
+for attractor_state, count in sorted_attractors:
+    failed_nodes = [node for node, state in attractor_state if not state]
+    failed_nodes_str = ', '.join(failed_nodes)
+    print(f"Count: {count}, Failed Nodes: {failed_nodes_str}")
 
 
 # Function to create HTML-like label for the info box
