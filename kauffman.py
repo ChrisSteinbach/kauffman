@@ -62,22 +62,19 @@ class KauffmanNetwork:
         self._expand_edges()
 
     def _expand_edges(self):
-        # Expand nodes based on 'instances' attribute and apply functions
         for edge in self.network.edges():
-            filter_source = partial(node_matches_edge_source, edge)
-            filter_target = partial(node_matches_edge_target, edge)
-            source_instances = filter(filter_source, self.expanded_network)
-            target_instances = filter(filter_target, self.expanded_network)
+            source_instances = [n for n in self.expanded_network if n.startswith(edge[0].attr['label'])]
+            target_instances = [n for n in self.expanded_network if n.startswith(edge[1].attr['label'])]
             for source in source_instances:
                 for target in target_instances:
                     if source != target:  # Exclude self-connections
                         self.expanded_network[source].append(target)
 
+
     def _expand_nodes(self):
         # Expand connections based on expanded nodes
         for node in self.network.nodes():
-            node_type = node.attr['label']
-            num_instances = self.instance_counts[node_type]
+            num_instances = int(node.attr['instances'])
             func = interpret_function(node.attr['func'])
             for i in range(1, num_instances + 1):
                 instance_name = f"{node.attr['label']} {i}"
