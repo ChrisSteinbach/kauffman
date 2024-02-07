@@ -3,6 +3,7 @@ import numpy as np
 import result_text
 import kauffman
 from result_graph import ResultGraph
+from result_text import print_kauffman_parameters, print_attractor_summary
 
 
 # Function to dynamically adjust P values based on network conditions
@@ -163,7 +164,14 @@ class Simulation:
         attractor_counts = self.purge_low_attractor_counts(attractor_counts)
         # Sorting attractors by their count in descending order
         sorted_attractors = sorted(attractor_counts.items(), key=lambda item: item[1], reverse=True)
-        return P, sorted_attractors
+        N = network.get_N()
+        K = network.get_average_K()
+        MAX_K = network.get_max_K()
+
+        print_kauffman_parameters(K, MAX_K, N, P)
+        print_attractor_summary(sorted_attractors)
+
+        result_graph.add_info_box(K, N, P)
 
 
 def random_sim_kauffman():
@@ -171,67 +179,10 @@ def random_sim_kauffman():
     result_graph = ResultGraph()
     num_stages = 10
     simulation = Simulation(num_stages)
+    simulation.run(network, result_graph)
 
-    N = network.get_N()
-    K = network.get_average_K()
-    MAX_K = network.get_max_K()
-    P, attractor_counts = simulation.run(network, result_graph)
 
-    # At the end of the script, print the Kauffman network parameters
-    print(f"\nKauffman Network Parameters:")
-    print(f"N (Total Nodes): {N}")
-    print(f"K (Average Inputs per Node): {K}")
-    print(f"K (Max Inputs per Node): {MAX_K}")
-    print(f"P (Bias in Boolean Functions): {P}")
+    result_graph.write(num_stages, "combined_stages.dot")
 
-    # Reporting
-    print("Significant Attractors and their occurrence counts:")
-    for attractor_state, count in attractor_counts:
-        failed_nodes = [node for node, state in attractor_state if not state]
-        failed_nodes_str = ', '.join(failed_nodes)
-        print(f"Count: {count}, Failed Nodes: {failed_nodes_str}")
-
-    # Function to create HTML-like label for the info box
-    def create_info_box_label(N, K, P):
-        return f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): {N}</TD></TR><TR><TD>K (Avg. Inputs per Node): {K:.2f}</TD></TR><TR><TD>P (Bias in Boolean Functions): {P}</TD></TR></TABLE>>'
-
-    # Add an info box node
-    info_box_label = create_info_box_label(N, K, P)
-    result_graph.master_graph.add_node("info_box", label=info_box_label, shape="note", style="filled",
-                                       color="lightgrey")
-
-    # Output the combined master graph to a file
-    master_graph_dot = result_graph.master_graph.to_string()
-
-    # Get the DOT representation as a string
-    dot_content = result_graph.master_graph.to_string()
-
-    # Dynamically generate the alignment snippet based on the number of stages
-
-    # Create align_X node declarations with style=invis
-    align_node_declarations = '\n\t\t'.join([f"align_{i} [style=invis];" for i in range(num_stages)])
-
-    # Create align_X -> align_Y edges with style=invis
-    align_edges = ' -> '.join([f"align_{i}" for i in range(num_stages)]) + ' [style=invis];'
-
-    # Complete alignment snippet
-    alignment_snippet = f"""
-    \tsubgraph align {{
-            \tgraph [rankdir=LR];
-            \t{align_node_declarations}
-            \trank=same {align_edges}
-    }}
-    """
-
-    # Edges from align_X to invisible_X
-    for i in range(num_stages):
-        alignment_snippet += f"\n\talign_{i} -> invisible_{i} [style=invis];"
-
-    # Insert the alignment snippet before the last closing brace
-    modified_dot_content = master_graph_dot.rsplit("}", 1)[0] + alignment_snippet + "}\n"
-
-    # Writing to the file
-    with open("combined_stages.dot", "w") as file:
-        file.write(modified_dot_content)
 
 random_sim_kauffman()
