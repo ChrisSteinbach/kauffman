@@ -1,3 +1,6 @@
+import random
+
+
 # Define the Boolean functions
 def all_func(inputs):
     return all(inputs)
@@ -18,6 +21,18 @@ def percentage_func(percentage):
     return perc_func
 
 
+def xor_func(inputs):
+    return sum(inputs) % 2 == 1
+
+
+def majority_func(inputs):
+    return sum(inputs) > len(inputs) / 2
+
+
+def random_func(_):  # Underscore is used to indicate that input is ignored
+    return random.choice([True, False])
+
+
 # Function to interpret the function name
 def interpret_function(func_name):
     if func_name == "all":
@@ -29,5 +44,11 @@ def interpret_function(func_name):
     elif "%" in func_name:
         percentage = float(func_name.replace("%", ""))
         return percentage_func(percentage)
+    elif func_name == "xor":
+        return xor_func
+    elif func_name == "majority":
+        return majority_func
+    elif func_name == "random":
+        return random_func
     else:
         raise ValueError(f"Unknown function: {func_name}")
