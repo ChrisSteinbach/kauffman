@@ -1,5 +1,5 @@
 import pygraphviz as pgv
-from functools import partial
+import re
 from network_behaviour import interpret_function
 
 
@@ -61,27 +61,33 @@ class KauffmanNetwork:
 
     def _expand_edges(self):
         for edge in self.network.edges():
-            # Determine the connection type based on the edge label
-            connection_type = edge.attr.get('label') or '1 to n'
-            print(connection_type)
+            # Default connection type
+            connection_type = edge.attr.get('label', '1 to n')
+
+            # Extract the ratio from the label, defaulting to 1:n if not specified
+            match = re.match(r'1 to (\d+)', connection_type)
+            if match:
+                # Connection ratio specified as "1 to n"
+                ratio = int(match.group(1))
+            else:
+                # Default behavior for "1 to n" without a specific ratio
+                ratio = None
 
             source_instances = [n for n in self.expanded_network if n.startswith(edge[0].attr['label'])]
             target_instances = [n for n in self.expanded_network if n.startswith(edge[1].attr['label'])]
 
-            # Apply "1 to n" connection logic
-            if connection_type == '1 to n':
+            if ratio is None or ratio >= len(target_instances):
+                # Apply "1 to n" connection logic (default behavior)
                 for source in source_instances:
                     for target in target_instances:
                         if source != target:  # Exclude self-connections
                             self.expanded_network[source].append(target)
-
-            # Apply "1 to 1" connection logic
-            elif connection_type == '1 to 1':
-                min_length = min(len(source_instances), len(target_instances))
-                for i in range(min_length):
-                    source = source_instances[i]
-                    target = target_instances[i]
-                    self.expanded_network[source].append(target)
+            else:
+                # Apply "1 to n" with a specific ratio
+                for i, source in enumerate(source_instances):
+                    assigned_targets = target_instances[i * ratio: (i + 1) * ratio]
+                    for target in assigned_targets:
+                        self.expanded_network[source].append(target)
 
     def _expand_nodes(self):
         # Expand connections based on expanded nodes
