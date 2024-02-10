@@ -122,26 +122,12 @@ class Simulation:
                     total_on_states += sum(states.values())
                     total_evaluations += len(states)
 
-                    # Update failed periods and attempt recovery
-                    for node in expanded_network:
-                        if states[node] == False:
-                            failed_periods[node] += 1
-                            if failed_periods[node] >= self.recovery_period:
-                                states[node] = True  # Node recovers
-                                failed_periods[node] = 0  # Reset failed period
+                    self.updatd_failed_periods_and_recoveries(expanded_network, failed_periods, states)
 
-                # Evaluate network health and update individual node health
-                health_sum += evaluate_network_health(states, health_indicator_nodes)
-                for node in expanded_network:
-                    node_health_stats[node].append(states[node])
+                health_sum = self.evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
+                                                             node_health_stats, states)
 
-                # Update attractor counts
-                attractor_state = frozenset(states.items())
-                attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
-
-                # Prune less frequent attractors periodically
-                if (stage * self.num_runs_per_stage + run) % self.prune_interval == 0:
-                    attractor_counts = self.purge_low_attractor_counts(attractor_counts)
+                attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, states)
 
             # Calculate average health for this stage
             average_health = health_sum / self.num_runs_per_stage
@@ -161,17 +147,42 @@ class Simulation:
                 result_graph.add_edge(edge, stage)
 
         P = total_on_states / total_evaluations if total_evaluations > 0 else 0
-        attractor_counts = self.purge_low_attractor_counts(attractor_counts)
-        # Sorting attractors by their count in descending order
-        sorted_attractors = sorted(attractor_counts.items(), key=lambda item: item[1], reverse=True)
         N = network.get_N()
         K = network.get_average_K()
         MAX_K = network.get_max_K()
 
         print_kauffman_parameters(K, MAX_K, N, P)
-        print_attractor_summary(sorted_attractors)
+
+        attractor_counts = self.purge_low_attractor_counts(attractor_counts)
+        print_attractor_summary(attractor_counts)
 
         result_graph.add_info_box(K, N, P)
+
+    def update_attractor_counts(self, attractor_counts, run, stage, states):
+        # Update attractor counts
+        attractor_state = frozenset(states.items())
+        attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
+        # Prune less frequent attractors periodically
+        if (stage * self.num_runs_per_stage + run) % self.prune_interval == 0:
+            attractor_counts = self.purge_low_attractor_counts(attractor_counts)
+        return attractor_counts
+
+    def evaluate_and_update_health(self, expanded_network, health_indicator_nodes, health_sum, node_health_stats,
+                                   states):
+        # Evaluate network health and update individual node health
+        health_sum += evaluate_network_health(states, health_indicator_nodes)
+        for node in expanded_network:
+            node_health_stats[node].append(states[node])
+        return health_sum
+
+    def updatd_failed_periods_and_recoveries(self, expanded_network, failed_periods, states):
+        # Update failed periods and attempt recovery
+        for node in expanded_network:
+            if states[node] == False:
+                failed_periods[node] += 1
+                if failed_periods[node] >= self.recovery_period:
+                    states[node] = True  # Node recovers
+                    failed_periods[node] = 0  # Reset failed period
 
 
 def random_sim_kauffman():
@@ -180,7 +191,6 @@ def random_sim_kauffman():
     num_stages = 10
     simulation = Simulation(num_stages)
     simulation.run(network, result_graph)
-
 
     result_graph.write(num_stages, "combined_stages.dot")
 

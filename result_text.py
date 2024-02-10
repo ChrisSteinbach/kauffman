@@ -15,7 +15,9 @@ def print_kauffman_parameters(K, MAX_K, N, P):
 
 def print_attractor_summary(attractor_counts):
     print("Significant Attractors and their occurrence counts:")
-    for attractor_state, count in attractor_counts:
+    # Sorting attractors by their count in descending order
+    sorted_attractors = sorted(attractor_counts.items(), key=lambda item: item[1], reverse=True)
+    for attractor_state, count in sorted_attractors:
         failed_nodes = [node for node, state in attractor_state if not state]
         failed_nodes_str = ', '.join(failed_nodes)
         print(f"Count: {count}, Failed Nodes: {failed_nodes_str}")
