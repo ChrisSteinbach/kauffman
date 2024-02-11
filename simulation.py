@@ -6,21 +6,6 @@ from result_graph import ResultGraph
 from result_text import print_kauffman_parameters, print_attractor_summary
 
 
-# Function to dynamically adjust P values based on network conditions
-# The basic idea is that a component is more likely to fail, the fewer
-# healthy nodes that remain. I imagine this as there being increased load
-# on the remaining nodes.
-def adjust_p_values(node, expanded_network, states, base_p_values):
-    # Decrease P value if a node has more than a threshold of failing downstream nodes
-    threshold = 0.5
-    downstream_nodes = expanded_network[node]
-    if downstream_nodes:
-        failing_downstream = sum(not states[down] for down in downstream_nodes) / len(downstream_nodes)
-        if failing_downstream > threshold:
-            return max(base_p_values[node] * (1 - failing_downstream), 0)  # Adjust P value based on failure rate
-    return base_p_values[node]
-
-
 def initialise_node_states(healthy_node_states, network, stage):
     states = healthy_node_states.copy()
 
@@ -37,6 +22,8 @@ def initialise_node_states(healthy_node_states, network, stage):
 
 
 def evaluate_network_health(states, health_indicator_nodes):
+    if len(health_indicator_nodes) == 0:
+        return 0
     return sum(states[node] for node in health_indicator_nodes) / len(health_indicator_nodes)
 
 
@@ -52,6 +39,15 @@ def calculate_average_health_by_type(node_health_stats):
     return average_type_health
 
 
+def evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum, node_health_stats,
+                               states):
+    # Evaluate network health and update individual node health
+    health_sum += evaluate_network_health(states, health_indicator_nodes)
+    for node in expanded_network:
+        node_health_stats[node].append(states[node])
+    return health_sum
+
+
 class Simulation:
     def __init__(self, num_stages):
         self.num_stages = num_stages
@@ -63,7 +59,6 @@ class Simulation:
         self.purge_threshold = 10
         # Prune low frequency candidate "attractors" after every prune_interval runs
         self.prune_interval = 1000
-        self.initial_p_value = 1.0
 
     def purge_low_attractor_counts(self, attractor_counts):
         return {attractor: count for attractor, count in attractor_counts.items() if count >= self.purge_threshold}
@@ -84,9 +79,6 @@ class Simulation:
             # To store individual node health across runs
             node_health_stats = {node: [] for node in expanded_network}
 
-            # Initialize base P values for each node type
-            base_p_values = {node: self.initial_p_value for node in expanded_network}
-
             health_sum = 0
 
             for run in range(self.num_runs_per_stage):
@@ -97,34 +89,15 @@ class Simulation:
 
                 # Run the simulation for this stage
                 for step in range(self.num_steps_per_run):
-                    # Dynamically adjust P values at each step
-                    current_p_values = {node: adjust_p_values(node, expanded_network, states, base_p_values)
-                                        for node in expanded_network}
-
-                    # Update states based on Boolean functions and adjusted P values
-                    new_states = states.copy()
-                    for node in expanded_network:
-                        if not states[node]:
-                            # Node remains failed if already failed
-                            continue
-                        else:
-                            # First, determine state based on Boolean function
-                            new_states[node] = network.functions[node](
-                                [states[neighbor] for neighbor in expanded_network[node]])
-
-                            # Then, modify state based on current P value (additional layer of logic)
-                            if np.random.rand() >= current_p_values[node]:
-                                # Override state to False based on P value
-                                new_states[node] = False
-                    states = new_states
+                    states = self.update_states(expanded_network, network, states)
 
                     # Update the counters for P value calculation
                     total_on_states += sum(states.values())
                     total_evaluations += len(states)
 
-                    self.updatd_failed_periods_and_recoveries(expanded_network, failed_periods, states)
+                    self.update_failed_periods_and_recoveries(expanded_network, failed_periods, states)
 
-                health_sum = self.evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
+                health_sum = evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
                                                              node_health_stats, states)
 
                 attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, states)
@@ -134,17 +107,7 @@ class Simulation:
             average_type_health = calculate_average_health_by_type(node_health_stats)
 
             result_text.print_stage_summary(stage, average_health, average_type_health)
-            result_graph.add_subgraph(stage)
-            # Add nodes with HTML-style labels including health and instance count
-            for node_id, label in network.original_label_map.items():
-                # Find the instance count by matching the full label
-                instance_count = network.instance_counts.get(label, 1)  # Default to 1 if not found
-                health = average_type_health.get(label, 0.5)  # Default health if not found
-                result_graph.add_node(node_id, stage, label, health, instance_count)
-
-            # Add edges with prefixed node names
-            for edge in network.edges():
-                result_graph.add_edge(edge, stage)
+            self.record_result_as_subgraph(average_type_health, network, result_graph, stage)
 
         P = total_on_states / total_evaluations if total_evaluations > 0 else 0
         N = network.get_N()
@@ -156,7 +119,33 @@ class Simulation:
         attractor_counts = self.purge_low_attractor_counts(attractor_counts)
         print_attractor_summary(attractor_counts)
 
-        result_graph.add_info_box(K, N, P)
+        result_graph.add_info_box(K, MAX_K, N, P)
+
+    def record_result_as_subgraph(self, average_type_health, network, result_graph, stage):
+        result_graph.add_subgraph(stage)
+        # Add nodes with HTML-style labels including health and instance count
+        for node_id, label in network.original_label_map.items():
+            # Find the instance count by matching the full label
+            instance_count = network.instance_counts.get(label, 1)  # Default to 1 if not found
+            health = average_type_health.get(label, 0.5)  # Default health if not found
+            result_graph.add_node(node_id, stage, label, health, instance_count)
+        # Add edges with prefixed node names
+        for edge in network.edges():
+            result_graph.add_edge(edge, stage)
+
+    def update_states(self, expanded_network, network, states):
+        # Update states based on Boolean functions and adjusted P values
+        new_states = states.copy()
+        for node in expanded_network:
+            if not states[node]:
+                # Node remains failed if already failed
+                continue
+            else:
+                # First, determine state based on Boolean function
+                new_states[node] = network.functions[node](
+                    [states[neighbor] for neighbor in expanded_network[node]])
+        states = new_states
+        return states
 
     def update_attractor_counts(self, attractor_counts, run, stage, states):
         # Update attractor counts
@@ -167,15 +156,7 @@ class Simulation:
             attractor_counts = self.purge_low_attractor_counts(attractor_counts)
         return attractor_counts
 
-    def evaluate_and_update_health(self, expanded_network, health_indicator_nodes, health_sum, node_health_stats,
-                                   states):
-        # Evaluate network health and update individual node health
-        health_sum += evaluate_network_health(states, health_indicator_nodes)
-        for node in expanded_network:
-            node_health_stats[node].append(states[node])
-        return health_sum
-
-    def updatd_failed_periods_and_recoveries(self, expanded_network, failed_periods, states):
+    def update_failed_periods_and_recoveries(self, expanded_network, failed_periods, states):
         # Update failed periods and attempt recovery
         for node in expanded_network:
             if states[node] == False:
@@ -188,7 +169,7 @@ class Simulation:
 def random_sim_kauffman():
     network = kauffman.KauffmanNetwork("plg_example.dot")
     result_graph = ResultGraph()
-    num_stages = 10
+    num_stages = 8
     simulation = Simulation(num_stages)
     simulation.run(network, result_graph)
 
