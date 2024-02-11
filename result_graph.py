@@ -1,8 +1,8 @@
 import pygraphviz as pgv
 
 
-def create_info_box_label(N, K, P):
-    return f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): {N}</TD></TR><TR><TD>K (Avg. Inputs per Node): {K:.2f}</TD></TR><TR><TD>P (Bias in Boolean Functions): {P}</TD></TR></TABLE>>'
+def create_info_box_label(N, K, MAX_K, P):
+    return f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): {N}</TD></TR><TR><TD>K (Avg. Inputs per Node): {K:.2f}</TD></TR><TR><TD>K (Max Inputs per Node): {MAX_K:.2f}</TD></TR><TR><TD>P (Bias in Boolean Functions): {P}</TD></TR></TABLE>>'
 
 
 def is_health_node(node_label):
@@ -80,9 +80,9 @@ class ResultGraph:
         self.stage_graph.add_edge(prefixed_source_id, prefixed_target_id)
 
     # Function to create HTML-like label for the info box
-    def add_info_box(self, K, N, P):
+    def add_info_box(self, K, MAX_K, N, P):
         # Add an info box node
-        info_box_label = create_info_box_label(N, K, P)
+        info_box_label = create_info_box_label(N, K, MAX_K, P)
         self.master_graph.add_node("info_box", label=info_box_label, shape="note", style="filled", color="lightgrey")
 
     def write(self, num_stages, filename):

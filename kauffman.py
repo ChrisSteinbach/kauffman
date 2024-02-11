@@ -65,8 +65,12 @@ class KauffmanNetwork:
         for edge in self.network.edges():
             connection_type = edge.attr.get('label') or '1 to n'
 
-            source_instances = [n for n in self.expanded_network if n.startswith(edge[0].attr['label'])]
-            target_instances = [n for n in self.expanded_network if n.startswith(edge[1].attr['label'])]
+            # Compile regex patterns for source and target node matching
+            source_pattern = re.compile(f"^{re.escape(edge[0].attr['label'])} \\d+$")
+            target_pattern = re.compile(f"^{re.escape(edge[1].attr['label'])} \\d+$")
+
+            source_instances = [n for n in self.expanded_network if source_pattern.match(n)]
+            target_instances = [n for n in self.expanded_network if target_pattern.match(n)]
 
             # Attempt to extract a specific ratio from the label, defaulting to the length of target_instances
             match = re.match(r'1 to (\d+)', connection_type)
