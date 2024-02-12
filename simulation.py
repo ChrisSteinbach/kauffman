@@ -1,9 +1,8 @@
 import random
 import numpy as np
-import result_text
 import kauffman
-from result_graph import ResultGraph
-from result_text import print_kauffman_parameters, print_attractor_summary
+from result_graph import ResultGraph, NullResultGraph
+from result_text import ResultText, NullResultText
 
 
 def initialise_node_states(healthy_node_states, network, stage):
@@ -48,6 +47,34 @@ def evaluate_and_update_health(expanded_network, health_indicator_nodes, health_
     return health_sum
 
 
+def record_result_as_subgraph(average_type_health, network, result_graph, stage):
+    result_graph.add_subgraph(stage)
+    # Add nodes with HTML-style labels including health and instance count
+    for node_id, label in network.original_label_map.items():
+        # Find the instance count by matching the full label
+        instance_count = network.instance_counts.get(label, 1)  # Default to 1 if not found
+        health = average_type_health.get(label, 0.5)  # Default health if not found
+        result_graph.add_node(node_id, stage, label, health, instance_count)
+    # Add edges with prefixed node names
+    for edge in network.edges():
+        result_graph.add_edge(edge, stage)
+
+
+def update_states(expanded_network, network, states):
+    # Update states based on Boolean functions and adjusted P values
+    new_states = states.copy()
+    for node in expanded_network:
+        if not states[node]:
+            # Node remains failed if already failed
+            continue
+        else:
+            # First, determine state based on Boolean function
+            new_states[node] = network.functions[node](
+                [states[neighbor] for neighbor in expanded_network[node]])
+    states = new_states
+    return states
+
+
 class Simulation:
     def __init__(self, num_stages):
         self.num_stages = num_stages
@@ -63,7 +90,7 @@ class Simulation:
     def purge_low_attractor_counts(self, attractor_counts):
         return {attractor: count for attractor, count in attractor_counts.items() if count >= self.purge_threshold}
 
-    def run(self, network, result_graph):
+    def run(self, network, result_graph=NullResultGraph(), result_text=NullResultText()):
         expanded_network = network.expanded_network
 
         healthy_node_states = {node: True for node in expanded_network}
@@ -89,7 +116,7 @@ class Simulation:
 
                 # Run the simulation for this stage
                 for step in range(self.num_steps_per_run):
-                    states = self.update_states(expanded_network, network, states)
+                    states = update_states(expanded_network, network, states)
 
                     # Update the counters for P value calculation
                     total_on_states += sum(states.values())
@@ -98,7 +125,7 @@ class Simulation:
                     self.update_failed_periods_and_recoveries(expanded_network, failed_periods, states)
 
                 health_sum = evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
-                                                             node_health_stats, states)
+                                                        node_health_stats, states)
 
                 attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, states)
 
@@ -107,45 +134,20 @@ class Simulation:
             average_type_health = calculate_average_health_by_type(node_health_stats)
 
             result_text.print_stage_summary(stage, average_health, average_type_health)
-            self.record_result_as_subgraph(average_type_health, network, result_graph, stage)
+            record_result_as_subgraph(average_type_health, network, result_graph, stage)
 
         P = total_on_states / total_evaluations if total_evaluations > 0 else 0
         N = network.get_N()
         K = network.get_average_K()
         MAX_K = network.get_max_K()
 
-        print_kauffman_parameters(K, MAX_K, N, P)
+        result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
         attractor_counts = self.purge_low_attractor_counts(attractor_counts)
-        print_attractor_summary(attractor_counts)
+        result_text.print_attractor_summary(attractor_counts)
 
         result_graph.add_info_box(K, MAX_K, N, P)
-
-    def record_result_as_subgraph(self, average_type_health, network, result_graph, stage):
-        result_graph.add_subgraph(stage)
-        # Add nodes with HTML-style labels including health and instance count
-        for node_id, label in network.original_label_map.items():
-            # Find the instance count by matching the full label
-            instance_count = network.instance_counts.get(label, 1)  # Default to 1 if not found
-            health = average_type_health.get(label, 0.5)  # Default health if not found
-            result_graph.add_node(node_id, stage, label, health, instance_count)
-        # Add edges with prefixed node names
-        for edge in network.edges():
-            result_graph.add_edge(edge, stage)
-
-    def update_states(self, expanded_network, network, states):
-        # Update states based on Boolean functions and adjusted P values
-        new_states = states.copy()
-        for node in expanded_network:
-            if not states[node]:
-                # Node remains failed if already failed
-                continue
-            else:
-                # First, determine state based on Boolean function
-                new_states[node] = network.functions[node](
-                    [states[neighbor] for neighbor in expanded_network[node]])
-        states = new_states
-        return states
+        return P
 
     def update_attractor_counts(self, attractor_counts, run, stage, states):
         # Update attractor counts
@@ -169,11 +171,13 @@ class Simulation:
 def random_sim_kauffman():
     network = kauffman.KauffmanNetwork("plg_example.dot")
     result_graph = ResultGraph()
+    result_text = ResultText()
     num_stages = 8
     simulation = Simulation(num_stages)
-    simulation.run(network, result_graph)
+    simulation.run(network, result_graph, result_text)
 
     result_graph.write(num_stages, "combined_stages.dot")
 
 
-random_sim_kauffman()
+if __name__ == "__main__":
+    random_sim_kauffman()

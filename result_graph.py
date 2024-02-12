@@ -92,3 +92,21 @@ class ResultGraph:
         # Writing to the file
         with open(filename, "w") as file:
             file.write(modified_dot_content)
+
+
+class NullResultGraph:
+    def add_subgraph(self, stage):
+        pass
+
+    def add_node(self, node_id, stage, label, health, instance_count):
+        pass
+
+    def add_edge(self, edge, stage):
+        pass
+
+    # Function to create HTML-like label for the info box
+    def add_info_box(self, K, MAX_K, N, P):
+        pass
+
+    def write(self, num_stages, filename):
+        pass

@@ -5,7 +5,11 @@ from network_behaviour import interpret_function
 
 class KauffmanNetwork:
     def __init__(self, dot_file):
-        self.network = pgv.AGraph(dot_file)
+        if dot_file.endswith(".dot"):
+            self.network = pgv.AGraph(dot_file)
+        else:
+            self.network = pgv.AGraph(string=dot_file)
+
         self.expanded_network = {}
         self.functions = {}
         self.original_label_map = {}

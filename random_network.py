@@ -24,29 +24,37 @@ def generate_network_constraints(N, K, max_attempts=1000):
     return connections
 
 
-def write_dot_file(filename, connections, func_name, min_instances=1, max_instances=1):
+def generate_dot_string(connections, functions_list, min_instances=1, max_instances=1):
+    dot_string = "digraph RBN {\n"
+    nodes = set([source for source, _ in connections] + [target for _, target in connections])
+    node_functions = {node: random.choice(functions_list) for node in nodes}
+    for node in nodes:
+        instances = random.randint(min_instances, max_instances)
+        func = node_functions[node]
+        dot_string += f'    {node} [label="{node}", func="{func}", instances={instances}];\n'
+    for source, target in connections:
+        dot_string += f'    {source} -> {target};\n'
+    dot_string += "}\n"
+    return dot_string
+
+
+def write_dot_file(filename, connections, functions_list, min_instances=1, max_instances=1):
+    dot_string = generate_dot_string(connections, functions_list, min_instances, max_instances)
     with open(filename, 'w') as f:
-        f.write("digraph RBN {\n")
-        nodes = set([source for source, _ in connections] + [target for _, target in connections])
-        for node in nodes:
-            instances = random.randint(min_instances, max_instances)
-            f.write(f'    {node} [label="{node}", func="{func_name}", instances={instances}];\n')
-        for source, target in connections:
-            f.write(f'    {source} -> {target};\n')
-        f.write("}\n")
+        f.write(dot_string)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 5 or len(sys.argv) > 7:
-        print("Usage: python script.py <dot_filename> <N> <K> <func_name> [<min_instances> <max_instances>]")
+    if len(sys.argv) < 4 or len(sys.argv) > 6:
+        print("Usage: python script.py <dot_filename> <N> <K> [<min_instances> <max_instances>]")
         sys.exit(1)
 
     dot_filename = sys.argv[1]
     N = int(sys.argv[2])
     K = int(sys.argv[3])
-    func_name = sys.argv[4]
-    min_instances = int(sys.argv[5]) if len(sys.argv) > 5 else 1
-    max_instances = int(sys.argv[6]) if len(sys.argv) > 6 else min_instances
+    min_instances = int(sys.argv[4]) if len(sys.argv) > 4 else 1
+    max_instances = int(sys.argv[5]) if len(sys.argv) > 5 else min_instances
 
     connections = generate_network_constraints(N, K)
-    write_dot_file(dot_filename, connections, func_name, min_instances, max_instances)
+    functions = ["and", "or"]
+    write_dot_file(dot_filename, connections, functions, min_instances, max_instances)
