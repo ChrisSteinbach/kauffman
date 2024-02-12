@@ -98,7 +98,7 @@ class Simulation:
                     self.update_failed_periods_and_recoveries(expanded_network, failed_periods, states)
 
                 health_sum = evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
-                                                             node_health_stats, states)
+                                                        node_health_stats, states)
 
                 attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, states)
 
