@@ -1,6 +1,7 @@
 import random
 import sys
 
+
 def generate_network_constraints(N, K, max_attempts=1000):
     nodes = [f"N{i}" for i in range(N)]
     connections = set()
@@ -22,20 +23,26 @@ def generate_network_constraints(N, K, max_attempts=1000):
 
     return connections
 
-def write_dot_file(filename, connections, min_instances=1, max_instances=1):
+
+def generate_dot_string(connections, functions_list, min_instances=1, max_instances=1):
+    dot_string = "digraph RBN {\n"
+    nodes = set([source for source, _ in connections] + [target for _, target in connections])
+    node_functions = {node: random.choice(functions_list) for node in nodes}
+    for node in nodes:
+        instances = random.randint(min_instances, max_instances)
+        func = node_functions[node]
+        dot_string += f'    {node} [label="{node}", func="{func}", instances={instances}];\n'
+    for source, target in connections:
+        dot_string += f'    {source} -> {target};\n'
+    dot_string += "}\n"
+    return dot_string
+
+
+def write_dot_file(filename, connections, functions_list, min_instances=1, max_instances=1):
+    dot_string = generate_dot_string(connections, functions_list, min_instances, max_instances)
     with open(filename, 'w') as f:
-        f.write("digraph RBN {\n")
-        nodes = set([source for source, _ in connections] + [target for _, target in connections])
-        # Randomly assign functions to nodes
-        functions = ["and", "or", "nand", "nor", "xor", "majority", "minority"]
-        node_functions = {node: random.choice(functions) for node in nodes}
-        for node in nodes:
-            instances = random.randint(min_instances, max_instances)
-            func = node_functions[node]  # Select the function for the current node
-            f.write(f'    {node} [label="{node}", func="{func}", instances={instances}];\n')
-        for source, target in connections:
-            f.write(f'    {source} -> {target};\n')
-        f.write("}\n")
+        f.write(dot_string)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 4 or len(sys.argv) > 6:
@@ -49,4 +56,5 @@ if __name__ == "__main__":
     max_instances = int(sys.argv[5]) if len(sys.argv) > 5 else min_instances
 
     connections = generate_network_constraints(N, K)
-    write_dot_file(dot_filename, connections, min_instances, max_instances)
+    functions = ["and", "or", "xor"]
+    write_dot_file(dot_filename, connections, functions, min_instances, max_instances)
