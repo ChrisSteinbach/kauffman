@@ -44,6 +44,11 @@ def minority_func(inputs):
 def random_func(_):  # Underscore is used to indicate that input is ignored
     return random.choice([True, False])
 
+def copy_func(inputs):  # Underscore is used to indicate that input is ignored
+    if len(inputs):
+      return inputs[0]
+    else:
+        return False
 
 # Function to interpret the function name and return the corresponding function
 def interpret_function(func_name):
@@ -73,5 +78,7 @@ def interpret_function(func_name):
         return minority_func
     elif func_name == "random":
         return random_func
+    elif func_name == "copy":
+        return copy_func
     else:
         raise ValueError(f"Unknown function: {func_name}")
