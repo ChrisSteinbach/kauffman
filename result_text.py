@@ -13,13 +13,18 @@ class ResultText:
         print(f"P (Bias in Boolean Functions): {P}")
 
     def print_attractor_summary(self, attractor_counts):
+        print()
         print("Significant Attractors and their occurrence counts:")
         # Sorting attractors by their count in descending order
         sorted_attractors = sorted(attractor_counts.items(), key=lambda item: item[1], reverse=True)
-        for attractor_state, count in sorted_attractors:
-            failed_nodes = [node for node, state in attractor_state if not state]
-            failed_nodes_str = ', '.join(failed_nodes)
-            print(f"Count: {count}, Failed Nodes: {failed_nodes_str}")
+        for attractor_states, count in sorted_attractors:
+            print(f"Count: {count}, States: {len(attractor_states)}")
+            state = 1
+            for attractor_state in attractor_states:
+                print(f"State {state}: {attractor_state}")
+                state = state + 1
+        print()
+        print(f"Number of attractors: {len(attractor_counts)}")
 
 
 class NullResultText:
