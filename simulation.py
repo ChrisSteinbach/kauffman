@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import re
 import kauffman
 from result_graph import ResultGraph, NullResultGraph
 from result_text import ResultText, NullResultText
@@ -60,7 +61,26 @@ def record_result_as_subgraph(average_type_health, network, result_graph, stage)
         result_graph.add_edge(edge, stage)
 
 
-def update_states(expanded_network, network, states):
+def remove_trailing_integer(input_string):
+    # This regular expression matches any text followed by a space and then one or more digits at the end of the string.
+    # The pattern is:
+    # - .*: any character (.) any number of times (*), matching as much as possible
+    # - \s: a whitespace character (like a space)
+    # - \d+: one or more digits (\d is a digit, + means one or more)
+    # - $: end of the string
+    pattern = r'.*\s\d+$'
+
+    # Check if the input string matches the pattern
+    if re.match(pattern, input_string):
+        # If it does, remove the last space and the digits following it
+        # The regex here matches a space (\s) followed by one or more digits (\d+) at the end of the string ($)
+        # and replaces it with an empty string, effectively removing it.
+        return re.sub(r'\s\d+$', '', input_string)
+    else:
+        # If the input string does not match the pattern, return it unchanged
+        return input_string
+
+def update_states_persist_failure(expanded_network, network, states):
     # Update states based on Boolean functions and adjusted P values
     new_states = states.copy()
     for node in expanded_network:
@@ -71,17 +91,26 @@ def update_states(expanded_network, network, states):
             # First, determine state based on Boolean function
             new_states[node] = network.functions[node](
                 [states[neighbor] for neighbor in expanded_network[node]])
-    states = new_states
-    return states
+    return new_states
+
+
+def update_states(expanded_network, network, states):
+    # Update states based on Boolean functions and adjusted P values
+    new_states = states.copy()
+    for node in expanded_network:
+        # Determine state based on Boolean function
+        current_neighbor_states = [states[neighbor] for neighbor in expanded_network[node]]
+        new_states[node] = network.functions[node](current_neighbor_states)
+    return new_states
 
 
 class Simulation:
     def __init__(self, num_stages):
         self.num_stages = num_stages
         self.num_runs_per_stage = 2000
-        self.num_steps_per_run = 20
-        # Failed node recovers after recovery_period runs
-        self.recovery_period = 12
+        self.num_steps_per_run = 40
+        # Failed node recovers after recovery_period runs, or None for no forced recovery
+        self.recovery_period = None
         # Threshold for minimum occurrences to consider as potential attractor
         self.purge_threshold = 10
         # Prune low frequency candidate "attractors" after every prune_interval runs
@@ -109,6 +138,9 @@ class Simulation:
             health_sum = 0
 
             for run in range(self.num_runs_per_stage):
+                state_history = []
+                attractor_found = False
+                attractor_sequence = []
                 states = initialise_node_states(healthy_node_states, network, stage)
 
                 # Track failed periods for each node
@@ -124,10 +156,22 @@ class Simulation:
 
                     self.update_failed_periods_and_recoveries(expanded_network, failed_periods, states)
 
+                    current_state = frozenset((remove_trailing_integer(node), state) for node, state in states.items())
+                    if current_state in state_history:
+                        attractor_index = state_history.index(current_state)
+                        attractor_sequence = state_history[attractor_index:]
+                        attractor_found = True
+                        break
+                    else:
+                        state_history.append(current_state)
+
                 health_sum = evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
                                                         node_health_stats, states)
 
-                attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, states)
+                if attractor_found:
+                    # Process the found attractor sequence
+                    attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, attractor_sequence)
+
 
             # Calculate average health for this stage
             average_health = health_sum / self.num_runs_per_stage
@@ -143,7 +187,7 @@ class Simulation:
 
         result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
-        attractor_counts = self.purge_low_attractor_counts(attractor_counts)
+        #attractor_counts = self.purge_low_attractor_counts(attractor_counts)
         result_text.print_attractor_summary(attractor_counts)
 
         result_graph.add_info_box(K, MAX_K, N, P)
@@ -151,14 +195,16 @@ class Simulation:
 
     def update_attractor_counts(self, attractor_counts, run, stage, states):
         # Update attractor counts
-        attractor_state = frozenset(states.items())
+        attractor_state = frozenset(states)
         attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
         # Prune less frequent attractors periodically
-        if (stage * self.num_runs_per_stage + run) % self.prune_interval == 0:
-            attractor_counts = self.purge_low_attractor_counts(attractor_counts)
+        # if (stage * self.num_runs_per_stage + run) % self.prune_interval == 0:
+            #attractor_counts = self.purge_low_attractor_counts(attractor_counts)
         return attractor_counts
 
     def update_failed_periods_and_recoveries(self, expanded_network, failed_periods, states):
+        if self.recovery_period is None:
+            return
         # Update failed periods and attempt recovery
         for node in expanded_network:
             if states[node] == False:
