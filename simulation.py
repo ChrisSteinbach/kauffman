@@ -80,6 +80,29 @@ def remove_trailing_integer(input_string):
         # If the input string does not match the pattern, return it unchanged
         return input_string
 
+
+def normalize_and_aggregate_attractors(attractors):
+    normalized_attractor_counts = []
+
+    for attractor in attractors:
+        # Dict to hold counts of True/False states per node type
+        state_counts = {}
+        for node_state in attractor:
+            node_type, state = remove_trailing_integer(node_state[0]), node_state[1]
+            if node_type not in state_counts:
+                state_counts[node_type] = {'True': 0, 'False': 0}
+            state_counts[node_type][str(state)] += 1
+
+        # Generate a normalized key based on state counts
+        normalized_key = frozenset((f"{node_type} x {state_counts[node_type][state]}", state)
+                                   for node_type in state_counts
+                                   for state in state_counts[node_type]
+                                   if state_counts[node_type][state] > 0)
+
+        normalized_attractor_counts.append(normalized_key)
+
+    return normalized_attractor_counts
+
 def update_states_persist_failure(expanded_network, network, states):
     # Update states based on Boolean functions and adjusted P values
     new_states = states.copy()
@@ -156,7 +179,8 @@ class Simulation:
 
                     self.update_failed_periods_and_recoveries(expanded_network, failed_periods, states)
 
-                    current_state = frozenset((remove_trailing_integer(node), state) for node, state in states.items())
+                    #current_state = frozenset((remove_trailing_integer(node), state) for node, state in states.items())
+                    current_state = frozenset(states.items())
                     if current_state in state_history:
                         attractor_index = state_history.index(current_state)
                         attractor_sequence = state_history[attractor_index:]
@@ -170,7 +194,7 @@ class Simulation:
 
                 if attractor_found:
                     # Process the found attractor sequence
-                    attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, attractor_sequence)
+                    attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, normalize_and_aggregate_attractors(attractor_sequence))
 
 
             # Calculate average health for this stage
@@ -185,10 +209,11 @@ class Simulation:
         K = network.get_average_K()
         MAX_K = network.get_max_K()
 
-        result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
         #attractor_counts = self.purge_low_attractor_counts(attractor_counts)
         result_text.print_attractor_summary(attractor_counts)
+
+        result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
         result_graph.add_info_box(K, MAX_K, N, P)
         return P
