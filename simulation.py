@@ -94,11 +94,11 @@ def normalize_and_aggregate_attractors(attractors):
                 state_counts[node_type] = {'True': 0, 'False': 0}
             state_counts[node_type][str(state)] += 1
 
-        # Generate a normalized key based on state counts
-        normalized_key = frozenset((f"{node_type} x {state_counts[node_type][state]}", state)
-                                   for node_type in state_counts
-                                   for state in state_counts[node_type]
-                                   if state_counts[node_type][state] > 0)
+        # Generate a normalized key based on state counts as a percentage healthy
+        normalized_key = frozenset(
+            f"{node_type} {round((state_counts[node_type]['True'] / (state_counts[node_type]['True'] + state_counts[node_type]['False'])) * 100)}% Healthy"
+            for node_type in state_counts
+        )
 
         normalized_attractors.append(normalized_key)
 
@@ -120,7 +120,6 @@ class Simulation:
         self.num_stages = num_stages
         self.num_runs_per_stage = 2000
         self.num_steps_per_run = 40
-
 
     def run(self, network, result_graph=NullResultGraph(), result_text=NullResultText()):
         expanded_network = network.expanded_network
@@ -168,8 +167,9 @@ class Simulation:
 
                 if attractor_found:
                     # Process the found attractor sequence
-                    attractor_counts = self.update_attractor_counts(attractor_counts, run, stage, normalize_and_aggregate_attractors(attractor_sequence))
-
+                    attractor_counts = self.update_attractor_counts(attractor_counts, run, stage,
+                                                                    normalize_and_aggregate_attractors(
+                                                                        attractor_sequence))
 
             # Calculate average health for this stage
             average_health = health_sum / self.num_runs_per_stage
@@ -183,8 +183,8 @@ class Simulation:
         K = network.get_average_K()
         MAX_K = network.get_max_K()
 
-
         result_text.print_attractor_summary(attractor_counts)
+        create_attractor_graph(attractor_counts)
 
         result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
@@ -197,7 +197,28 @@ class Simulation:
         attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
         return attractor_counts
 
+import pygraphviz as pgv
 
+def create_attractor_graph(attractors):
+    G = pgv.AGraph(directed=True)
+    attractor_id = 0
+    for attractor, count in attractors.items():
+        subgraph_name = f"cluster_{attractor_id} (Count: {count})"
+        subG = G.add_subgraph(name=subgraph_name, label=subgraph_name)
+        states = list(attractor)  # Convert frozenset to list for indexing
+        for i, state in enumerate(states):
+            state_label = ", ".join(state)
+            subG.add_node(state_label, label=state_label)
+            # Add edge to next state to represent transition
+            if len(states) > 1:
+                next_state = states[(i + 1) % len(states)]
+                next_state_label = ", ".join(next_state)
+                subG.add_edge(state_label, next_state_label)
+        attractor_id += 1
+    G.layout(prog='dot')
+    G.write('attractors_graph.dot')
+
+# Assuming attractors is your dictionary of attractors
 
 def random_sim_kauffman():
     network = kauffman.KauffmanNetwork("plg_example.dot")
