@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import random
 import numpy as np
 import re
@@ -82,7 +83,7 @@ def remove_trailing_integer(input_string):
 
 
 def normalize_and_aggregate_attractors(attractors):
-    normalized_attractor_counts = []
+    normalized_attractors = []
 
     for attractor in attractors:
         # Dict to hold counts of True/False states per node type
@@ -99,22 +100,9 @@ def normalize_and_aggregate_attractors(attractors):
                                    for state in state_counts[node_type]
                                    if state_counts[node_type][state] > 0)
 
-        normalized_attractor_counts.append(normalized_key)
+        normalized_attractors.append(normalized_key)
 
-    return normalized_attractor_counts
-
-def update_states_persist_failure(expanded_network, network, states):
-    # Update states based on Boolean functions and adjusted P values
-    new_states = states.copy()
-    for node in expanded_network:
-        if not states[node]:
-            # Node remains failed if already failed
-            continue
-        else:
-            # First, determine state based on Boolean function
-            new_states[node] = network.functions[node](
-                [states[neighbor] for neighbor in expanded_network[node]])
-    return new_states
+    return normalized_attractors
 
 
 def update_states(expanded_network, network, states):
@@ -132,15 +120,7 @@ class Simulation:
         self.num_stages = num_stages
         self.num_runs_per_stage = 2000
         self.num_steps_per_run = 40
-        # Failed node recovers after recovery_period runs, or None for no forced recovery
-        self.recovery_period = None
-        # Threshold for minimum occurrences to consider as potential attractor
-        self.purge_threshold = 10
-        # Prune low frequency candidate "attractors" after every prune_interval runs
-        self.prune_interval = 1000
 
-    def purge_low_attractor_counts(self, attractor_counts):
-        return {attractor: count for attractor, count in attractor_counts.items() if count >= self.purge_threshold}
 
     def run(self, network, result_graph=NullResultGraph(), result_text=NullResultText()):
         expanded_network = network.expanded_network
@@ -166,9 +146,6 @@ class Simulation:
                 attractor_sequence = []
                 states = initialise_node_states(healthy_node_states, network, stage)
 
-                # Track failed periods for each node
-                failed_periods = {node: 0 for node in expanded_network}
-
                 # Run the simulation for this stage
                 for step in range(self.num_steps_per_run):
                     states = update_states(expanded_network, network, states)
@@ -177,9 +154,6 @@ class Simulation:
                     total_on_states += sum(states.values())
                     total_evaluations += len(states)
 
-                    self.update_failed_periods_and_recoveries(expanded_network, failed_periods, states)
-
-                    #current_state = frozenset((remove_trailing_integer(node), state) for node, state in states.items())
                     current_state = frozenset(states.items())
                     if current_state in state_history:
                         attractor_index = state_history.index(current_state)
@@ -210,7 +184,6 @@ class Simulation:
         MAX_K = network.get_max_K()
 
 
-        #attractor_counts = self.purge_low_attractor_counts(attractor_counts)
         result_text.print_attractor_summary(attractor_counts)
 
         result_text.print_kauffman_parameters(K, MAX_K, N, P)
@@ -222,21 +195,8 @@ class Simulation:
         # Update attractor counts
         attractor_state = frozenset(states)
         attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
-        # Prune less frequent attractors periodically
-        # if (stage * self.num_runs_per_stage + run) % self.prune_interval == 0:
-            #attractor_counts = self.purge_low_attractor_counts(attractor_counts)
         return attractor_counts
 
-    def update_failed_periods_and_recoveries(self, expanded_network, failed_periods, states):
-        if self.recovery_period is None:
-            return
-        # Update failed periods and attempt recovery
-        for node in expanded_network:
-            if states[node] == False:
-                failed_periods[node] += 1
-                if failed_periods[node] >= self.recovery_period:
-                    states[node] = True  # Node recovers
-                    failed_periods[node] = 0  # Reset failed period
 
 
 def random_sim_kauffman():
