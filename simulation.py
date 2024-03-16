@@ -184,12 +184,15 @@ class Simulation:
         MAX_K = network.get_max_K()
 
         result_text.print_attractor_summary(attractor_counts)
-        create_attractor_graph(attractor_counts)
-
         result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
+        if len(attractor_counts) < 10:
+            print("Creating attractor graph")
+            create_attractor_graph(attractor_counts)
+
+
         result_graph.add_info_box(K, MAX_K, N, P)
-        return P
+        return P, len(attractor_counts)
 
     def update_attractor_counts(self, attractor_counts, run, stage, states):
         # Update attractor counts
