@@ -16,7 +16,22 @@ class KauffmanNetwork:
         self.instance_counts = {}
         self._load_network()
         self._expand_network()
+        #print(self.expanded_network)
         self.health_indicator_nodes = [node for node in self.expanded_network if node.startswith("Health")]
+
+        # Calculating total connections (Inputs + Outputs) for each non-health node
+        self.node_connections = {node: 0 for node in self.expanded_network if node not in self.health_indicator_nodes}
+
+        # Count Outputs
+        for node, neighbors in self.expanded_network.items():
+            if node not in self.health_indicator_nodes:
+                self.node_connections[node] += len([n for n in neighbors if n not in self.health_indicator_nodes])
+
+        # Count Inputs
+        for node in self.node_connections:
+            for source, targets in self.expanded_network.items():
+                if node in targets and source not in self.health_indicator_nodes:
+                    self.node_connections[node] += 1
 
     def nodes(self):
         return self.network.nodes()
@@ -32,13 +47,11 @@ class KauffmanNetwork:
         return len(self.expanded_network)
 
     def get_average_K(self):
-        # K - Inputs per Node
-        total_inputs = sum(len(neighbors) for neighbors in self.expanded_network.values())
         N = self.get_N()
-        return total_inputs / N if N > 0 else 0
+        return sum(self.node_connections.values()) / N if N > 0 else 0
 
     def get_max_K(self):
-        return max(len(connections) for connections in self.expanded_network.values())
+        return max(self.node_connections.values()) if self.node_connections else 0
 
     def _load_network(self):
         for node in self.network.nodes():

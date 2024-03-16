@@ -41,10 +41,13 @@ def minority_func(inputs):
     return sum(inputs) > len(inputs) / 2
 
 
-def random_func(_):  # Underscore is used to indicate that input is ignored
-    return random.choice([True, False])
+def random_func(inputs):
+    choices = [True, False]
+    if len(inputs) > 0:
+        choices = [bool(value) for value in inputs]
+    return random.choice(choices)
 
-def copy_func(inputs):  # Underscore is used to indicate that input is ignored
+def copy_func(inputs):
     if len(inputs):
       return inputs[0]
 
