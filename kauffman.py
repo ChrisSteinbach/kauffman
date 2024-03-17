@@ -51,7 +51,9 @@ class KauffmanNetwork:
         return sum(self.node_connections.values()) / N if N > 0 else 0
 
     def get_max_K(self):
-        return max(self.node_connections.values()) if self.node_connections else 0
+        max_k = max((value, key) for (key, value) in self.node_connections.items()) if self.node_connections else 0
+        print("Max K:" + str(max_k))
+        return max_k[0]
 
     def _load_network(self):
         for node in self.network.nodes():
