@@ -82,27 +82,19 @@ def remove_trailing_integer(input_string):
         return input_string
 
 
-def normalize_and_aggregate_attractors(attractors):
-    normalized_attractors = []
+def normalize_attractor(attractor):
+    # Dict to hold counts of True/False states per node type
+    state_counts = {}
+    for node_state in attractor:
+        node_type, state = remove_trailing_integer(node_state[0]), node_state[1]
+        if node_type not in state_counts:
+            state_counts[node_type] = {'True': 0, 'False': 0}
+        state_counts[node_type][str(state)] += 1
 
-    for attractor in attractors:
-        # Dict to hold counts of True/False states per node type
-        state_counts = {}
-        for node_state in attractor:
-            node_type, state = remove_trailing_integer(node_state[0]), node_state[1]
-            if node_type not in state_counts:
-                state_counts[node_type] = {'True': 0, 'False': 0}
-            state_counts[node_type][str(state)] += 1
-
-        # Generate a normalized key based on state counts as a percentage healthy
-        normalized_key = frozenset(
-            f"{node_type} {round((state_counts[node_type]['True'] / (state_counts[node_type]['True'] + state_counts[node_type]['False'])) * 100)}% Healthy"
-            for node_type in state_counts
-        )
-
-        normalized_attractors.append(normalized_key)
-
-    return normalized_attractors
+    # Generate a normalized attractor based on state counts as a percentage healthy
+    return frozenset(
+        f"{node_type} {round((state_counts[node_type]['True'] / (state_counts[node_type]['True'] + state_counts[node_type]['False'])) * 100)}% Healthy"
+        for node_type in state_counts)
 
 
 def update_states(expanded_network, network, states):
@@ -153,7 +145,7 @@ class Simulation:
                     total_on_states += sum(states.values())
                     total_evaluations += len(states)
 
-                    current_state = frozenset(states.items())
+                    current_state = normalize_attractor(frozenset(states.items()))
                     if current_state in state_history:
                         attractor_index = state_history.index(current_state)
                         attractor_sequence = state_history[attractor_index:]
@@ -167,9 +159,7 @@ class Simulation:
 
                 if attractor_found:
                     # Process the found attractor sequence
-                    attractor_counts = self.update_attractor_counts(attractor_counts, run, stage,
-                                                                    normalize_and_aggregate_attractors(
-                                                                        attractor_sequence))
+                    attractor_counts = self.update_attractor_counts(attractor_counts, attractor_sequence)
 
             # Calculate average health for this stage
             average_health = health_sum / self.num_runs_per_stage
@@ -194,7 +184,7 @@ class Simulation:
         result_graph.add_info_box(K, MAX_K, N, P)
         return P, len(attractor_counts)
 
-    def update_attractor_counts(self, attractor_counts, run, stage, states):
+    def update_attractor_counts(self, attractor_counts, states):
         # Update attractor counts
         attractor_state = frozenset(states)
         attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
