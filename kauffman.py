@@ -3,6 +3,21 @@ import re
 from network_behaviour import interpret_function
 
 
+def output_expanded_network_to_dot(expanded_network, output_filename="expanded.dot"):
+    with open(output_filename, 'w') as f:
+        f.write("digraph ExpandedNetwork {\n")
+
+        # Write nodes
+        for node in expanded_network.keys():
+            f.write(f'    "{node}" [label="{node}"];\n')
+
+        # Write edges
+        for source, targets in expanded_network.items():
+            for target in targets:
+                f.write(f'    "{source}" -> "{target}";\n')
+
+        f.write("}\n")
+
 class KauffmanNetwork:
     def __init__(self, dot_file):
         if dot_file.endswith(".dot"):
@@ -32,6 +47,7 @@ class KauffmanNetwork:
             for source, targets in self.expanded_network.items():
                 if node in targets and source not in self.health_indicator_nodes:
                     self.node_connections[node] += 1
+        output_expanded_network_to_dot(self.expanded_network)
 
     def nodes(self):
         return self.network.nodes()
@@ -81,6 +97,12 @@ class KauffmanNetwork:
                 self.functions[instance_name] = func
 
     def _expand_edges(self):
+        # Track the number of connections for each target instance
+        target_connections_count = dict()
+
+        for target in self.expanded_network.keys():
+            target_connections_count[target] = 0
+
         for edge in self.network.edges():
             connection_type = edge.attr.get('label') or '1 to n'
 
@@ -98,10 +120,11 @@ class KauffmanNetwork:
             else:
                 ratio = len(target_instances)  # Default ratio to the total number of target instances
 
-            target_instances = target_instances * len(source_instances)
-
-            # Apply "1 to n" logic with the determined ratio
-            for i, source in enumerate(source_instances):
-                assigned_targets = target_instances[i * ratio: (i + 1) * ratio]
-                for target in assigned_targets:
+            # Distribute connections to target instances with the fewest connections
+            for source in source_instances:
+                # Sort target instances by their current number of connections, ascending
+                sorted_targets = sorted(target_instances, key=lambda t: target_connections_count[t])
+                # Assign connections to the targets with the fewest connections
+                for target in sorted_targets[:ratio]:
                     self.expanded_network[source].append(target)
+                    target_connections_count[target] += 1  # Update the count
