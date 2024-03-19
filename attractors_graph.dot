@@ -1,0 +1,16 @@
+strict digraph "" {
+	graph [bb="0,0,936,91"];
+	node [label="\N"];
+	subgraph "cluster_0 (Count: 10000)" {
+		graph [bb="8,8,928,83",
+			label="cluster_0 (Count: 10000)",
+			lheight=0.21,
+			lp="468,71.5",
+			lwidth=2.47
+		];
+		"N8 True, N7 True, N2 False, N0 True, N3 True, N6 True, N1 False, N5 True, N4 True, N9 False"	[height=0.5,
+			label="N8 True, N7 True, N2 False, N0 True, N3 True, N6 True, N1 False, N5 True, N4 True, N9 False",
+			pos="468,34",
+			width=12.566];
+	}
+}

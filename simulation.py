@@ -63,12 +63,6 @@ def record_result_as_subgraph(average_type_health, network, result_graph, stage)
 
 
 def remove_trailing_integer(input_string):
-    # This regular expression matches any text followed by a space and then one or more digits at the end of the string.
-    # The pattern is:
-    # - .*: any character (.) any number of times (*), matching as much as possible
-    # - \s: a whitespace character (like a space)
-    # - \d+: one or more digits (\d is a digit, + means one or more)
-    # - $: end of the string
     pattern = r'.*\s\d+$'
 
     # Check if the input string matches the pattern
@@ -82,7 +76,7 @@ def remove_trailing_integer(input_string):
         return input_string
 
 
-def normalize_attractor(attractor):
+def normalize_attractor(attractor, network):
     # Dict to hold counts of True/False states per node type
     state_counts = {}
     for node_state in attractor:
@@ -93,7 +87,7 @@ def normalize_attractor(attractor):
 
     # Generate a normalized attractor based on state counts as a percentage healthy
     return frozenset(
-        f"{node_type} {round((state_counts[node_type]['True'] / (state_counts[node_type]['True'] + state_counts[node_type]['False'])) * 100)}% Healthy"
+        f"{node_type} {(state_counts[node_type]['True'] / (state_counts[node_type]['True'] + state_counts[node_type]['False'])) > network.health_percentage[node_type]}"
         for node_type in state_counts)
 
 
@@ -124,6 +118,8 @@ class Simulation:
         total_on_states = 0
         total_evaluations = 0
         attractor_counts = {}
+        runs_with_attractor = 0
+        runs_no_attractor = 0
 
         for stage in range(self.num_stages):
             # To store individual node health across runs
@@ -132,34 +128,13 @@ class Simulation:
             health_sum = 0
 
             for run in range(self.num_runs_per_stage):
-                state_history = []
-                attractor_found = False
-                attractor_sequence = []
-                states = initialise_node_states(healthy_node_states, network, stage)
-
-                # Run the simulation for this stage
-                for step in range(self.num_steps_per_run):
-                    states = update_states(expanded_network, network, states)
-
-                    # Update the counters for P value calculation
-                    total_on_states += sum(states.values())
-                    total_evaluations += len(states)
-
-                    current_state = normalize_attractor(frozenset(states.items()))
-                    if current_state in state_history:
-                        attractor_index = state_history.index(current_state)
-                        attractor_sequence = state_history[attractor_index:]
-                        attractor_found = True
-                        break
-                    else:
-                        state_history.append(current_state)
-
-                health_sum = evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
-                                                        node_health_stats, states)
-
+                attractor_counts, health_sum, total_evaluations, total_on_states, attractor_found = self.run_single_simulation(
+                    attractor_counts, expanded_network, health_indicator_nodes, health_sum, healthy_node_states,
+                    network, node_health_stats, stage, total_evaluations, total_on_states)
                 if attractor_found:
-                    # Process the found attractor sequence
-                    attractor_counts = self.update_attractor_counts(attractor_counts, attractor_sequence)
+                    runs_with_attractor = runs_with_attractor + 1
+                else:
+                    runs_no_attractor = runs_no_attractor + 1
 
             # Calculate average health for this stage
             average_health = health_sum / self.num_runs_per_stage
@@ -173,16 +148,46 @@ class Simulation:
         K = network.get_average_K()
         MAX_K = network.get_max_K()
 
-        result_text.print_attractor_summary(attractor_counts)
+        result_text.print_attractor_summary(attractor_counts, runs_with_attractor, runs_no_attractor)
         result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
-        if len(attractor_counts) < 10:
+        if len(attractor_counts) < 10 and False:
             print("Creating attractor graph")
             create_attractor_graph(attractor_counts)
 
 
         result_graph.add_info_box(K, MAX_K, N, P)
         return P, len(attractor_counts)
+
+    def run_single_simulation(self, attractor_counts, expanded_network, health_indicator_nodes, health_sum,
+                              healthy_node_states, network, node_health_stats, stage, total_evaluations,
+                              total_on_states):
+        state_history = []
+        attractor_found = False
+        attractor_sequence = []
+        states = initialise_node_states(healthy_node_states, network, stage)
+        # Run the simulation for this stage
+        for step in range(self.num_steps_per_run):
+            states = update_states(expanded_network, network, states)
+
+            # Update the counters for P value calculation
+            total_on_states += sum(states.values())
+            total_evaluations += len(states)
+
+            current_state = normalize_attractor(frozenset(states.items()), network)
+            if current_state in state_history:
+                attractor_index = state_history.index(current_state)
+                attractor_sequence = state_history[attractor_index:]
+                attractor_found = True
+                break
+            else:
+                state_history.append(current_state)
+        health_sum = evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
+                                                node_health_stats, states)
+        if attractor_found:
+            # Process the found attractor sequence
+            attractor_counts = self.update_attractor_counts(attractor_counts, attractor_sequence)
+        return attractor_counts, health_sum, total_evaluations, total_on_states, attractor_found
 
     def update_attractor_counts(self, attractor_counts, states):
         # Update attractor counts

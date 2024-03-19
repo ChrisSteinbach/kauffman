@@ -1,0 +1,71 @@
+strict digraph "" {
+	node [label="\N"];
+	D	[color="#906f00",
+		fillcolor="#906f00",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Distributor</TD></TR><TR><TD>Health: 43.4%</TD></TR><TR><TD>Instances: 2</TD></TR></TABLE>>,
+		penwidth=1,
+		shape=rectangle,
+		style=filled];
+	I	[color="#8b7400",
+		fillcolor="#8b7400",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Ingester</TD></TR><TR><TD>Health: 45.4%</TD></TR><TR><TD>Instances: 2</TD></TR></TABLE>>,
+		penwidth=1,
+		shape=rectangle,
+		style=filled];
+	D -> I;
+	MIO	[color="#7b8400",
+		fillcolor="#7b8400",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Minio</TD></TR><TR><TD>Health: 51.8%</TD></TR><TR><TD>Instances: 8</TD></TR></TABLE>>,
+		penwidth=1,
+		shape=rectangle,
+		style=filled];
+	I -> MIO;
+	HW	[color=black,
+		fillcolor="#788700",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Health Write</TD></TR><TR><TD>Health: 53.2%</TD></TR><TR><TD>Instances: 1</TD></TR></TABLE>>,
+		penwidth=3,
+		shape=rectangle,
+		style=filled];
+	HW -> D;
+	QF	[color="#b84700",
+		fillcolor="#b84700",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Query Frontend</TD></TR><TR><TD>Health: 27.8%</TD></TR><TR><TD>Instances: 2</TD></TR></TABLE>>,
+		penwidth=1,
+		shape=rectangle,
+		style=filled];
+	QS	[color="#b44b00",
+		fillcolor="#b44b00",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Query Scheduler</TD></TR><TR><TD>Health: 29.0%</TD></TR><TR><TD>Instances: 2</TD></TR></TABLE>>,
+		penwidth=1,
+		shape=rectangle,
+		style=filled];
+	QF -> QS;
+	Q	[color="#b24d00",
+		fillcolor="#b24d00",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Querier</TD></TR><TR><TD>Health: 30.2%</TD></TR><TR><TD>Instances: 4</TD></TR></TABLE>>,
+		penwidth=1,
+		shape=rectangle,
+		style=filled];
+	QS -> Q;
+	Q -> I;
+	SG	[color="#8d7200",
+		fillcolor="#8d7200",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Storage Gateway</TD></TR><TR><TD>Health: 44.4%</TD></TR><TR><TD>Instances: 3</TD></TR></TABLE>>,
+		penwidth=1,
+		shape=rectangle,
+		style=filled];
+	Q -> SG;
+	SG -> MIO;
+	HR	[color=black,
+		fillcolor="#a45b00",
+		label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>Health Read</TD></TR><TR><TD>Health: 35.5%</TD></TR><TR><TD>Instances: 1</TD></TR></TABLE>>,
+		penwidth=3,
+		shape=rectangle,
+		style=filled];
+	HR -> QF;
+	MIO -> MIO;
+	info_box	[color=lightgrey,
+		label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): 25</TD></TR><TR><TD>K (Avg. Inputs per Node): 5.44</TD></TR><TR><TD>P (Bias in Boolean Functions): 0.7706298</TD></TR></TABLE>>,
+		shape=note,
+		style=filled];
+}
