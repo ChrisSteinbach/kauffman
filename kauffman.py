@@ -27,6 +27,7 @@ class KauffmanNetwork:
 
         self.expanded_network = {}
         self.functions = {}
+        self.health_percentage = {}
         self.original_label_map = {}
         self.instance_counts = {}
         self._load_network()
@@ -68,12 +69,14 @@ class KauffmanNetwork:
 
     def get_max_K(self):
         max_k = max((value, key) for (key, value) in self.node_connections.items()) if self.node_connections else 0
-        print("Max K:" + str(max_k))
+        #print("Max K:" + str(max_k))
         return max_k[0]
 
     def _load_network(self):
         for node in self.network.nodes():
             node_type = node.attr['label']
+            health_perc = int(node.attr.get('health_perc') or 0)
+            self.health_percentage[node_type] = health_perc
 
             # Create a mapping from node names to node types
             self.original_label_map[node.name] = node_type

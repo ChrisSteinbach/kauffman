@@ -12,7 +12,7 @@ class ResultText:
         print(f"K (Max Inputs per Node): {MAX_K}")
         print(f"P (Bias in Boolean Functions): {P}")
 
-    def print_attractor_summary(self, attractor_counts):
+    def print_attractor_summary(self, attractor_counts, runs_with_attractor, runs_no_attractor):
         print()
         print("Significant Attractors and their occurrence counts:")
         # Sorting attractors by their count in descending order
@@ -25,6 +25,7 @@ class ResultText:
                 state = state + 1
         print()
         print(f"Number of attractors: {len(attractor_counts)}")
+        print(f"Percentage of runs with attractors: {runs_with_attractor / (runs_with_attractor + runs_no_attractor)}")
 
 
 class NullResultText:
@@ -34,5 +35,5 @@ class NullResultText:
     def print_kauffman_parameters(self, K, MAX_K, N, P):
         pass
 
-    def print_attractor_summary(self, attractor_counts):
+    def print_attractor_summary(self, attractor_counts, runs_with_attractor, runs_no_attractor):
         pass

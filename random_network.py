@@ -57,5 +57,5 @@ if __name__ == "__main__":
     max_instances = int(sys.argv[5]) if len(sys.argv) > 5 else min_instances
 
     connections = generate_network_constraints(N, K)
-    functions = ["and", "or"]
+    functions = ["and", "nor", "xor", "majority"]
     write_dot_file(dot_filename, connections, functions, min_instances, max_instances)
