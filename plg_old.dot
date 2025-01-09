@@ -1,0 +1,20 @@
+digraph RBN {
+    D [label="Distributor", func="one", instances=2];
+    I [label="Ingester", func="one", instances=2];
+    HW [label="Health Write", func="one", instances=1];
+
+    QF [label="Query Frontend", func="one", instances=2];
+    QS [label="Query Scheduler", func="one", instances=2];
+    Q [label="Querier", func="75%", instances=4];
+    SG [label="Storage Gateway", func="one", instances=3];
+    HR [label="Health Read", func="one", instances=1];
+
+    MIO [label="Minio", func="75%", instances=8];
+    MIO -> MIO;
+
+    HW -> D -> I -> MIO;
+
+    HR -> QF -> QS -> Q -> SG -> MIO;
+
+    Q -> I; 
+}

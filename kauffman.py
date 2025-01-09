@@ -39,9 +39,9 @@ class KauffmanNetwork:
         self.node_connections = {node: 0 for node in self.expanded_network if node not in self.health_indicator_nodes}
 
         # Count Outputs
-        for node, neighbors in self.expanded_network.items():
-            if node not in self.health_indicator_nodes:
-                self.node_connections[node] += len([n for n in neighbors if n not in self.health_indicator_nodes])
+        #for node, neighbors in self.expanded_network.items():
+            #if node not in self.health_indicator_nodes:
+                #self.node_connections[node] += len([n for n in neighbors if n not in self.health_indicator_nodes])
 
         # Count Inputs
         for node in self.node_connections:

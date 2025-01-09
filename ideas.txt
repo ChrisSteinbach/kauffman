@@ -1,0 +1,21 @@
+Modularize the code and create unit tests
+Produce a "nonfunctional requirements" table
+Allow more than one architecture to be processed to allow side-by-side comparison
+Create a web-based interface where either the diagram can be created or pasted and the results shown as a diagram in the browser
+Find a way to model openshift, perhaps with CPU, Memory and Disk as nodes that can be placed as dependencies
+
+Minio Frontend nodes are probably uneavenly mapped. Storage Gateway and Ingester probably map to the same nodes.
+
+Action: find a way to always add mappings to the target node with the least connections
+
+Should remove Health nodes from attractor sequence
+Should speed up attractor detection. Consider:
+ 1) Using a threshold instead of a percentage so that a node-type is either up or down depending
+    on how many pods are up. Minio, for example, needs over 50% of pods available. Others may be
+    considered "up" with only one pod available.
+ 2) Instead of the above, using a tuple, (node_type, percentage) and stop keying on strings
+
+
+Introduce pertubations during attractor cycling
+
+Count non-attractor runs

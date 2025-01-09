@@ -63,12 +63,6 @@ def record_result_as_subgraph(average_type_health, network, result_graph, stage)
 
 
 def remove_trailing_integer(input_string):
-    # This regular expression matches any text followed by a space and then one or more digits at the end of the string.
-    # The pattern is:
-    # - .*: any character (.) any number of times (*), matching as much as possible
-    # - \s: a whitespace character (like a space)
-    # - \d+: one or more digits (\d is a digit, + means one or more)
-    # - $: end of the string
     pattern = r'.*\s\d+$'
 
     # Check if the input string matches the pattern

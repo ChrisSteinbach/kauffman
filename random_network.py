@@ -14,10 +14,10 @@ def generate_network_constraints(N, K, max_attempts=1000):
         source = random.choice(nodes)
         target = random.choice(nodes)
         # Check if adding this connection keeps both nodes within the K limit
-        if source != target and (outgoing[source] + incoming[source]) < K and (outgoing[target] + incoming[target]) < K:
+        #if source != target and (outgoing[source] + incoming[source]) < K and (outgoing[target] + incoming[target]) < K:
+        if source != target and incoming[target] < K:
             connections.add((source, target))
             incoming[target] += 1
-            outgoing[source] += 1
             attempts = 0  # Reset attempts after a successful connection
         else:
             attempts += 1  # Increment attempts after a failed connection attempt
