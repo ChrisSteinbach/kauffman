@@ -15,7 +15,4 @@ Should speed up attractor detection. Consider:
     considered "up" with only one pod available.
  2) Instead of the above, using a tuple, (node_type, percentage) and stop keying on strings
 
-
-Introduce pertubations during attractor cycling
-
 Count non-attractor runs
