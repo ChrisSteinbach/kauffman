@@ -118,16 +118,24 @@ class KauffmanNetwork:
 
             # Attempt to extract a specific ratio from the label, defaulting to the length of target_instances
             match = re.match(r'1 to (\d+)', connection_type)
+            self_connected = False
             if match:
                 ratio = int(match.group(1))
+            elif connection_type == '1 to self':
+                ratio = 1
+                self_connected = True
             else:
                 ratio = len(target_instances)  # Default ratio to the total number of target instances
 
             # Distribute connections to target instances with the fewest connections
             for source in source_instances:
-                # Sort target instances by their current number of connections, ascending
-                sorted_targets = sorted(target_instances, key=lambda t: target_connections_count[t])
-                # Assign connections to the targets with the fewest connections
-                for target in sorted_targets[:ratio]:
-                    self.expanded_network[source].append(target)
-                    target_connections_count[target] += 1  # Update the count
+                if self_connected:
+                   self.expanded_network[source].append(source)
+                   target_connections_count[source] += 1
+                else:
+                   # Sort target instances by their current number of connections, ascending
+                   sorted_targets = sorted(target_instances, key=lambda t: target_connections_count[t])
+                   # Assign connections to the targets with the fewest connections
+                   for target in sorted_targets[:ratio]:
+                       self.expanded_network[source].append(target)
+                       target_connections_count[target] += 1  # Update the count

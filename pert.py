@@ -49,7 +49,7 @@ def display_columns(stdscr, states_history, node_states, terminal_width, padding
     for row in range(len(states_history[0])):
         row_name = row_names[row]
         row_number = f"{row + 1} ({row_name})".ljust(padding) + ":"
-        line = ''.join('1' if states_history[col][row] else '0' for col in range(-num_columns, 0))
+        line = ''.join('1' if states_history[col][row] else ' ' for col in range(-num_columns, 0))
         stdscr.addstr(row, 0, row_number + line)
 
 def list_node_states(node_states):
@@ -58,6 +58,21 @@ def list_node_states(node_states):
         current_state.append(value)
     return current_state
 
+def parse_input(input_buffer):
+    """Parses the input buffer to extract numbers and ranges."""
+    result = []
+    parts = input_buffer.split(',')
+    for part in parts:
+        part = part.strip()
+        if '-' in part:
+            try:
+                start, end = map(int, part.split('-'))
+                result.extend(range(start - 1, end))  # Convert to 0-based index
+            except ValueError:
+                pass  # Ignore invalid ranges
+        elif part.isdigit():
+            result.append(int(part) - 1)  # Convert to 0-based index
+    return result
 
 def loop(stdscr, network):
     # Setup curses
@@ -89,7 +104,7 @@ def loop(stdscr, network):
         # Display the prompt at the bottom
         stdscr.move(len(current_state) + 2, 0)
         stdscr.clrtoeol()  # Clear the line before writing
-        stdscr.addstr(f"Enter row numbers separated by commas to flip states (or 'q' to quit): ")
+        stdscr.addstr(len(current_state) + 2, 0, "Enter row numbers separated by commas (or ranges with '-') to flip states (or 'q' to quit): ")
         
         stdscr.move(len(current_state) + 3, 0)
         stdscr.clrtoeol()  # Clear the line before writing stdscr.addstr(f"Input: {input_buffer}")
@@ -103,7 +118,7 @@ def loop(stdscr, network):
                 break
             elif key in (curses.KEY_ENTER, 10, 13):  # Enter key
                 # Parse and process the input buffer
-                rows_to_flip = [int(num.strip()) - 1 for num in input_buffer.split(',') if num.strip().isdigit()]
+                rows_to_flip = parse_input(input_buffer)
                 for row_index in rows_to_flip:
                     if 0 <= row_index < len(current_state):
                         current_state[row_index] = not current_state[row_index]
@@ -115,7 +130,7 @@ def loop(stdscr, network):
                 input_buffer = ""  # Clear the buffer after processing
             elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
                 input_buffer = input_buffer[:-1]  # Remove last character
-            elif 48 <= key <= 57 or key == 44:  # Digits (0-9) or comma
+            elif 48 <= key <= 57 or key in (44, 45):  # Digits (0-9), comma, or hyphen
                 input_buffer += chr(key)
 
         except Exception:
