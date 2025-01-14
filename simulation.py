@@ -222,7 +222,7 @@ def random_sim_kauffman():
     network = kauffman.KauffmanNetwork("plg_example.dot")
     result_graph = ResultGraph()
     result_text = ResultText()
-    num_stages = 8
+    num_stages = 16
     simulation = Simulation(num_stages)
     simulation.run(network, result_graph, result_text)
 
