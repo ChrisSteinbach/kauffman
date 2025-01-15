@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kauffman"
+version = "0.1.0"
+description = "Random Boolean Network simulation"
+authors = [
+  { name="Chris Steinbach" }
+]
+dependencies = [
+  "numpy",
+  "requests"
+]
+

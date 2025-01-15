@@ -1,0 +1,6 @@
+__pycache__/
+venv/
+.idea/
+attractors_graph.dot
+combined_stages.dot
+expanded.dot

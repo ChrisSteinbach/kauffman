@@ -1,0 +1,20 @@
+digraph RBN {
+    A [label="A", func="nand(A) & nand(B) & nand(C)", instances=1];
+    B [label="B", func="copy(A) & nand(B) & nand(C)", instances=1];
+    C [label="C", func="nand(A) & copy(B) & nand(C)", instances=1];
+
+
+
+    A -> A;
+    A -> B;
+    A -> C;
+
+    B -> B;
+    B -> A;
+    B -> C;
+
+    C -> C;
+    C -> A;
+    C -> B;
+}
+

@@ -1,0 +1,17 @@
+ - Add a state persistence layer so that individual nodes retain their state
+   regardless of conditionals configured on the node
+
+ - Stop running simulation when no more attractors are discovered
+
+ - Add support for redundancy across multiple clusters or datacenters
+
+ - Produce a "nonfunctional requirements" table
+
+ - Produce a incidence matrix based on detected attractors
+
+ - Find a way to model openshift, perhaps with CPU, Memory and Disk as nodes
+   that can be placed as dependencies
+
+ - Improve the attractor diagram. Show surviving nodes of the state only (i.e.
+   the residue), and transitions between states?
+

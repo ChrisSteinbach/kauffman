@@ -1,0 +1,25 @@
+digraph RBN {
+    D [label="Distributor", func="one", instances=4];
+    I [label="Ingester", func="50%(Ingester) & one(Minio)", health_perc="0.5", instances=4];
+
+    D -> I [label="1 to n"];
+
+    QF [label="Query Frontend", func="one", instances=4];
+    QS [label="Query Scheduler", func="one", instances=4];
+    Q [label="Querier", func="one(Storage Gateway) | one(Ingester)", instances=4];
+    SG [label="Storage Gateway", func="one", instances=4];
+
+    MIO [label="Minio", func="75%(Minio) & 25%(Drive)", instances=4];
+    DRV [label="Drive", func="copy", instances=16];
+
+    MIO -> MIO [label="1 to n"];
+    MIO -> DRV [label="1 to 4"];
+
+    I -> MIO [label="1 to 1"];
+    I -> I [label="1 to self"];
+    QF -> QS -> Q [label="1 to n"];
+    Q -> SG [label="1 to n"];
+    SG -> MIO [label="1 to n"];
+    Q -> I [label="1 to n"]; 
+    DRV -> DRV [label="1 to self"];
+}

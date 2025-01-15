@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Check for the operating system
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux platform
+    if ! command -v xclip &> /dev/null; then
+        echo "Error: xclip is not installed. Please install it to use this script."
+        exit 1
+    fi
+    # Copy file content to clipboard using xclip
+    xclip -selection clipboard < "$1"
+    echo "File copied to clipboard using xclip."
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS platform
+    if ! command -v pbcopy &> /dev/null; then
+        echo "Error: pbcopy is not installed. It should be available on macOS by default."
+        exit 1
+    fi
+    # Copy file content to clipboard using pbcopy
+    pbcopy < "$1"
+    echo "File copied to clipboard using pbcopy."
+else
+    echo "Error: Unsupported operating system."
+    exit 1
+fi
+
