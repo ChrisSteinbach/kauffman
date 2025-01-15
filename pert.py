@@ -50,12 +50,20 @@ def display_columns(stdscr, states_history, node_states, terminal_width, padding
         row_names[index] = key
         index = index + 1
 
+    # Define color pairs for 1 and 0 states
+    curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_GREEN)  # Green for True
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_RED)    # Red for False
+
+
     # Print the states row by row with row numbers
     for row in range(len(states_history[0])):
         row_name = row_names[row]
         row_number = f"{row + 1} ({row_name})".ljust(padding) + ":"
-        line = ''.join('1' if states_history[col][row] else ' ' for col in range(-num_columns, 0))
-        stdscr.addstr(row, 0, row_number + line)
+        stdscr.addstr(row, 0, row_number)
+        for col in range(-num_columns, 0):
+           state = states_history[col][row]
+           color = curses.color_pair(1 if state else 2)
+           stdscr.addstr(row, padding + col + num_columns - 1, ' ', color)
 
 def list_node_states(node_states):
     current_state = []

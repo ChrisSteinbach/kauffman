@@ -33,7 +33,6 @@ class KauffmanNetwork:
         self._load_network()
         self._expand_network()
         self.input_types = {}
-        #print(self.expanded_network)
         self.health_indicator_nodes = [node for node in self.expanded_network if node.startswith("Health")]
 
         # Calculating total connections (Inputs + Outputs) for each non-health node
@@ -49,7 +48,7 @@ class KauffmanNetwork:
             for source, targets in self.expanded_network.items():
                 if node in targets and source not in self.health_indicator_nodes:
                     self.node_connections[node] += 1
-        output_expanded_network_to_dot(self.expanded_network)
+        #output_expanded_network_to_dot(self.expanded_network)
 
         for node in self.network.nodes():
             num_instances = int(node.attr['instances'])
