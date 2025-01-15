@@ -1,28 +1,15 @@
 digraph RBN {
-    D [label="Distributor", func="random", instances=4];
-    I [label="Ingester", func="random", instances=4];
-    HW [label="Health Write", func="random", instances=1];
+    A [label="A", func="copy", instances=1];
+    B [label="B", func="copy", instances=1];
+    C [label="C", func="copy", instances=1];
+	D [label="D", func="and(A) & and(C)", instances=1];
 
-    QF [label="Query Frontend", func="random", instances=4];
-    QS [label="Query Scheduler", func="random", instances=4];
-    Q [label="Querier", func="random", instances=4];
-    SG [label="Storage Gateway", func="random", instances=4];
-    HR [label="Health Read", func="random", instances=1];
 
-    MF [label="Minio Frontend", func="random", instances=8];
-	MD [label="Minio Distributor", func="random", instances=8];
-    MIO [label="Minio", func="random", instances=8];
-    DRV [label="Drive", func="random", instances=8];
 
-    MF -> MD -> MIO [label="1 to 2"];
-    MD -> MD [label="1 to 1"];
-    MIO -> DRV [label="1 to 1"];
-    HW -> D  [label="1 to 1"];
-    D -> I [label="1 to 1"];
-    I -> MF [label="1 to 1"];
-    HR -> QF -> QS -> Q [label="1 to 2"];
-    Q -> SG [label="1 to 1"];
-    SG -> MF [label="1 to 1"];
-    Q -> I [label="1 to 1"]; 
+    B -> B;
+    C -> D;
+	D -> C;
+	D -> A;
+	A -> C;
 }
 

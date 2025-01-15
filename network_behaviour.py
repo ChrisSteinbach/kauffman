@@ -1,4 +1,5 @@
 import random
+import re
 
 
 # Define the Boolean functions
@@ -22,11 +23,8 @@ def nor_func(inputs):
     return not any(inputs)
 
 
-def percentage_func(percentage):
-    def perc_func(inputs):
-        return sum(inputs) >= len(inputs) * (percentage / 100)
-
-    return perc_func
+def percentage_func(inputs, percentage):
+    return sum(inputs) >= len(inputs) * (percentage / 100)
 
 
 def xor_func(inputs):
@@ -51,35 +49,66 @@ def copy_func(inputs):
     if len(inputs):
       return inputs[0]
 
-# Function to interpret the function name and return the corresponding function
-def interpret_function(func_name):
-    if func_name == "all":
-        return and_func
-    elif func_name == "none":
-        return nor_func  # 'none' true only if all inputs are false, similar to NOR
-    elif func_name == "one":
-        # This previously represented a function that returns True if at least one input is True, similar to OR
-        return or_func
-    elif func_name == "and":
-        return and_func
-    elif func_name == "or":
-        return or_func
-    elif func_name == "xor":
-        return xor_func
-    elif func_name == "nand":
-        return nand_func
-    elif func_name == "nor":
-        return nor_func
-    elif "%" in func_name:
-        percentage = float(func_name.replace("%", ""))
-        return percentage_func(percentage)
-    elif func_name == "majority":
-        return majority_func
-    elif func_name == "minority":
-        return minority_func
-    elif func_name == "random":
-        return random_func
-    elif func_name == "copy":
-        return copy_func
-    else:
-        raise ValueError(f"Unknown function: {func_name}")
+function_map = {
+    "all": all_func,
+    "and": and_func,
+    "nand": nand_func,
+    "or": or_func,
+    "nor": nor_func,
+    "xor": xor_func,
+    "none": nor_func,
+    "one": or_func,
+    "majority": majority_func,
+    "minority": minority_func,
+    "random": random_func,
+    "copy": copy_func,
+    "%": percentage_func  # Special case for percentages
+}
+
+def interpret_function(func_str):
+    """
+    Parse the function string and return a function that evaluates it.
+    Supports global and type-specific conditions.
+    """
+
+    # Parse the function string into conditions
+    conditions = func_str.split("&")
+
+    def node_function(inputs, input_types):
+        # Evaluate each condition
+        for condition in conditions:
+            condition = condition.strip()
+
+            # Check for type-specific conditions
+            match = re.match(r"(\w+)\((\w+)\)", condition)
+            if match:
+                func, target_type = match.groups()
+                type_inputs = [inputs[i] for i, t in enumerate(input_types) if t == target_type]
+
+                # Handle percentages
+                if "%" in func:
+                    percentage = int(func.replace("%", ""))
+                    if not function_map["%"](type_inputs, percentage):
+                        return False
+                elif func in function_map:
+                    if not function_map[func](type_inputs):
+                        return False
+                else:
+                    raise ValueError(f"Unknown function: {func}")
+
+            # Global conditions
+            elif "%" in condition:
+                percentage = int(condition.replace("%", ""))
+                if not function_map["%"](inputs, percentage):
+                    return False
+            elif condition in function_map:
+                if not function_map[condition](inputs):
+                    return False
+            else:
+                raise ValueError(f"Unknown function: {condition}")
+
+        # If all conditions pass, return True
+        return True
+
+    return node_function
+

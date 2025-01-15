@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3.12
 import random
 import numpy as np
 import re
@@ -91,13 +91,17 @@ def normalize_attractor(attractor, network):
         for node_type in state_counts)
 
 
+def update_node_state(node, states, functions, expanded_network, input_types):
+    inputs = [states[neighbor] for neighbor in expanded_network[node]]
+    types = [input_types[neighbor] for neighbor in expanded_network[node]]
+    #return functions[node](inputs)
+    return functions[node](inputs, types)
+
 def update_states(expanded_network, network, states):
     # Update states based on Boolean functions and adjusted P values
     new_states = states.copy()
     for node in expanded_network:
-        # Determine state based on Boolean function
-        current_neighbor_states = [states[neighbor] for neighbor in expanded_network[node]]
-        new_states[node] = network.functions[node](current_neighbor_states)
+        new_states[node] = update_node_state(node, states, network.functions, expanded_network, network.input_types)
     return new_states
 
 
@@ -151,7 +155,7 @@ class Simulation:
         result_text.print_attractor_summary(attractor_counts, runs_with_attractor, runs_no_attractor)
         result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
-        if len(attractor_counts) < 10 and False:
+        if len(attractor_counts) < 10:
             print("Creating attractor graph")
             create_attractor_graph(attractor_counts)
 
