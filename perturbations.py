@@ -6,6 +6,8 @@ from rbn import kauffman
 import os
 import time
 import curses
+import sys
+
 
 def debug_message(message):
     with open("/tmp/debug.log", "a") as log_file:
@@ -164,10 +166,31 @@ def loop(stdscr, network):
         # Pause slightly before the next iteration
         time.sleep(0.2)
 
+dot_file=None
 
 def random_sim_kauffman(stdscr):
-    network = kauffman.KauffmanNetwork("plg_example.dot")
+    network = kauffman.KauffmanNetwork(dot_file)
     loop(stdscr, network)
 
 if __name__ == "__main__":
+    # Check if exactly one argument is passed (excluding the script name)
+    if len(sys.argv) != 2:
+        print("Usage: python perturbations.py <file.dot>")
+        sys.exit(1)
+
+    # Get the filename from the command-line arguments
+    dot_file = sys.argv[1]
+
+    # Check if the file has a .dot extension
+    if not dot_file.endswith(".dot"):
+        print(f"Error: The file '{dot_file}' does not have a .dot extension.")
+        sys.exit(1)
+
+    # Check if the file exists
+    if not os.path.exists(dot_file):
+        print(f"Error: The file '{dot_file}' does not exist.")
+        sys.exit(1)
+
+    # File exists and has .dot extension
+    print(f"File '{dot_file}' is valid and ready for use.")
     curses.wrapper(random_sim_kauffman)
