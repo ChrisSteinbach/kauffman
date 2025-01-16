@@ -1,29 +1,35 @@
 digraph RBN {
-    HW [label="Health Write", func="random", instances=1];
-    HR [label="Health Read", func="random", instances=1];
+    W [label="OpenShift Worker", func="one(OpenShift Worker) & one(OpenShift Cluster)", instances=8];
+    C [label="OpenShift Cluster", func="copy", instances=2];
 
-    D [label="Distributor", func="random", instances=4];
-    I [label="Ingester", func="random", instances=4];
+    D [label="Distributor", func="one(OpenShift Worker) & one(Ingester)", instances=2];
+    I [label="Ingester", func="copy", instances=2];
 
-    QF [label="Query Frontend", func="random", instances=4];
-    QS [label="Query Scheduler", func="random", instances=4];
-    Q [label="Querier", func="random", instances=4];
-    SG [label="Storage Gateway", func="random", instances=4];
+    D -> I [label="1 to n"];
+    I -> I [label="1 to self"];
 
-    MF [label="Minio Frontend", func="random", instances=8];
-	MD [label="Minio Distributor", func="random", instances=8];
-    MIO [label="Minio", func="random", instances=8];
-    DRV [label="Drive", func="random", instances=8];
+    D -> W [label="1 to 1"];
+    I -> W [label="1 to 1"];
 
-    MF -> MD -> MIO [label="1 to 1"];
-    MIO -> DRV [label="1 to 1"];
-    HW -> D  [label="1 to n"];
-    D -> I [label="1 to 1"];
-    I -> MF [label="1 to 1"];
-    HR -> QF -> QS [label="1 to 2"];
-    QS -> Q [label="1 to 1"];
-    Q -> SG [label="1 to 1"];
-    SG -> MF [label="1 to 1"];
-    Q -> I [label="1 to 1"]; 
+    W -> W [label="1 to self"];
+    W -> C [label="1 to 1"];
+    C -> C [label="1 to self"];
+
+
+    W2 [label="OpenShift Worker2", func="one(OpenShift Worker2) & one(OpenShift Cluster2)", instances=8];
+    C2 [label="OpenShift Cluster2", func="copy", instances=2];
+
+    D2 [label="Distributor2", func="one(OpenShift Worker2) & one(Ingester2)", instances=2];
+    I2 [label="Ingester2", func="copy", instances=2];
+
+    D2 -> I2 [label="1 to n"];
+    I2 -> I2 [label="1 to self"];
+
+    D2 -> W2 [label="1 to 1"];
+    I2 -> W2 [label="1 to 1"];
+
+    W2 -> W2 [label="1 to self"];
+    W2 -> C2 [label="1 to 1"];
+    C2 -> C2 [label="1 to self"];
 }
 

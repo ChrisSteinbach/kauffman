@@ -1,6 +1,7 @@
 import pygraphviz as pgv
 import re
 from .network_behaviour import interpret_function
+import sys
 
 
 def output_expanded_network_to_dot(expanded_network, output_filename="expanded.dot"):
@@ -56,6 +57,7 @@ class KauffmanNetwork:
             for i in range(1, num_instances + 1):
                 instance_name = f"{label} {i}"
                 self.input_types[instance_name] = label
+
 
     def nodes(self):
         return self.network.nodes()
