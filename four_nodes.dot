@@ -2,13 +2,13 @@ digraph RBN {
     A [label="A", func="copy", instances=1];
     B [label="B", func="copy", instances=1];
     C [label="C", func="copy", instances=1];
-	D [label="D", func="copy", instances=1];
+    D [label="D", func="copy", instances=1];
 
 
 
     B -> B;
     C -> D;
-	D -> C;
+    D -> C;
 	A -> C;
 }
 

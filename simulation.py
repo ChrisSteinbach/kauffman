@@ -5,6 +5,9 @@ import re
 from rbn import kauffman
 from rbn.result_graph import ResultGraph, NullResultGraph
 from rbn.result_text import ResultText, NullResultText
+import sys
+import os
+
 
 
 def initialise_node_states(healthy_node_states, network, stage):
@@ -222,8 +225,8 @@ def create_attractor_graph(attractors):
 
 # Assuming attractors is your dictionary of attractors
 
-def random_sim_kauffman():
-    network = kauffman.KauffmanNetwork("plg_example.dot")
+def random_sim_kauffman(dot_file):
+    network = kauffman.KauffmanNetwork(dot_file)
     result_graph = ResultGraph()
     result_text = ResultText()
     num_stages = 16
@@ -234,4 +237,26 @@ def random_sim_kauffman():
 
 
 if __name__ == "__main__":
-    random_sim_kauffman()
+
+    # Check if exactly one argument is passed (excluding the script name)
+    if len(sys.argv) != 2:
+        print("Usage: python simulation.py <file.dot>")
+        sys.exit(1)
+
+    # Get the filename from the command-line arguments
+    dot_file = sys.argv[1]
+
+    # Check if the file has a .dot extension
+    if not dot_file.endswith(".dot"):
+        print(f"Error: The file '{dot_file}' does not have a .dot extension.")
+        sys.exit(1)
+
+    # Check if the file exists
+    if not os.path.exists(dot_file):
+        print(f"Error: The file '{dot_file}' does not exist.")
+        sys.exit(1)
+
+    # File exists and has .dot extension
+    print(f"File '{dot_file}' is valid and ready for use.")
+
+    random_sim_kauffman(dot_file)
