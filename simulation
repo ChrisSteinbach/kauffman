@@ -1,0 +1,2 @@
+#!/bin/bash
+python simulation.py && xclip -selection clipboard < combined_stages.dot
