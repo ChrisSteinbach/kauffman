@@ -2,7 +2,7 @@
 import random
 import numpy as np
 import re
-import kauffman
+from rbn import kauffman
 import os
 import time
 import curses

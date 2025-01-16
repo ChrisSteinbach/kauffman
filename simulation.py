@@ -2,9 +2,9 @@
 import random
 import numpy as np
 import re
-import kauffman
-from result_graph import ResultGraph, NullResultGraph
-from result_text import ResultText, NullResultText
+from rbn import kauffman
+from rbn.result_graph import ResultGraph, NullResultGraph
+from rbn.result_text import ResultText, NullResultText
 
 
 def initialise_node_states(healthy_node_states, network, stage):

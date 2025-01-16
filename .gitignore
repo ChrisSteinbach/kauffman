@@ -1,0 +1,4 @@
+__pycache__/
+attractors_graph.dot
+combined_stages.dot
+expanded.dot

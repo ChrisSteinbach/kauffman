@@ -1,6 +1,6 @@
 import pygraphviz as pgv
 import re
-from network_behaviour import interpret_function
+from .network_behaviour import interpret_function
 
 
 def output_expanded_network_to_dot(expanded_network, output_filename="expanded.dot"):
@@ -48,7 +48,7 @@ class KauffmanNetwork:
             for source, targets in self.expanded_network.items():
                 if node in targets and source not in self.health_indicator_nodes:
                     self.node_connections[node] += 1
-        #output_expanded_network_to_dot(self.expanded_network)
+        output_expanded_network_to_dot(self.expanded_network)
 
         for node in self.network.nodes():
             num_instances = int(node.attr['instances'])
