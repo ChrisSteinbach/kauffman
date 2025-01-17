@@ -1,2 +1,2 @@
 #!/bin/bash
-python simulation.py $1 && xclip -selection clipboard < combined_stages.dot
+python simulation.py $1 && ./copy combined_stages.dot

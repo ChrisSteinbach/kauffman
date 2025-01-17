@@ -2,9 +2,12 @@ digraph RBN {
     W [label="OpenShift Worker", func="one(OpenShift Worker) & one(OpenShift Cluster)", instances=8];
     C [label="OpenShift Cluster", func="copy", instances=2];
 
+    H [label="Health", func="one", instances=1];
     D [label="Distributor", func="one(OpenShift Worker) & one(Ingester)", instances=2];
     I [label="Ingester", func="copy", instances=2];
 
+    H -> D [label="1 to n"];
+    H -> D2 [label="1 to n"];
     D -> I [label="1 to n"];
     I -> I [label="1 to self"];
 
