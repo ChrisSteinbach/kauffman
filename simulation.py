@@ -7,6 +7,7 @@ from rbn.result_graph import ResultGraph, NullResultGraph
 from rbn.result_text import ResultText, NullResultText
 import sys
 import os
+import pygraphviz as pgv
 
 
 
@@ -160,7 +161,7 @@ class Simulation:
 
         if len(attractor_counts) < 10:
             print("Creating attractor graph")
-            create_attractor_graph(attractor_counts)
+            create_attractor_graph(attractor_counts, network)
 
 
         result_graph.add_info_box(K, MAX_K, N, P)
@@ -202,28 +203,44 @@ class Simulation:
         attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
         return attractor_counts
 
-import pygraphviz as pgv
+def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
+    # Add nodes with HTML-style labels including health and instance count
+    for node_id, label in network.original_label_map.items():
+        # Find the instance count by matching the full label
+        instance_count = network.instance_counts.get(label, 1)  # Default to 1 if not found
+        #health = state[]
+        result_graph.add_node(f"{attractor_id}_{state_id}_{node_id}")
+    # Add edges with prefixed node names
+    for edge in network.edges():
+        prefixed_source_id = f"{attractor_id}_{state_id}_{edge[0]}"
+        prefixed_target_id = f"{attractor_id}_{state_id}_{edge[1]}"
+        result_graph.add_edge(prefixed_source_id, prefixed_target_id)
 
-def create_attractor_graph(attractors):
+def create_attractor_graph(attractors, network):
     G = pgv.AGraph(directed=True)
+    G.graph_attr["rankdir"] = "LR"
     attractor_id = 0
     for attractor, count in attractors.items():
         subgraph_label = f"Attractor {attractor_id} (Count: {count})"
-        subgraph_name = f"attractor_{attractor_id}"
-        subG = G.add_subgraph(name=subgraph_name, label=subgraph_name)
+        subgraph_name = f"cluster_{attractor_id}"
+        subG = G.add_subgraph(name=subgraph_name, label=subgraph_label)
         states = list(attractor)  # Convert frozenset to list for indexing
         for i, state in enumerate(states):
-            state_graph_label = f"State {attractor_id}"
-            state_graph_name = f"state_{attractor_id}"
-            subA = subG.add_subgraph(name=state_graph_name, label=state_graph_label, style='dotted')
+            state_id = i
+            state_graph_label = f"State {state_id}"
+            state_graph_name = f"cluster_{attractor_id}_state_{state_id}"
+            state_name = f"attractor_{attractor_id}_state_{state_id}"
+
+            subA = subG.add_subgraph(name=state_graph_name, label=state_graph_label)
+            if len(states) > 1:
+                subA.add_node(state_name, shape="none", label="", margin="0")
 
             state_label = ", ".join(state)
-            subA.add_node(state_label, label=state_label)
-            # Add edge to next state to represent transition
-            if len(states) > 1:
-                next_state = states[(i + 1) % len(states)]
-                next_state_label = ", ".join(next_state)
-                subA.add_edge(state_label, next_state_label)
+            record_state_as_graph(attractor_id, state_id, state, network, subA)
+        if len(states) > 1:
+            for i in range(0, len(states)-1):
+                subG.add_edge(f"attractor_{attractor_id}_state_{i}", f"attractor_{attractor_id}_state_{i + 1}")
+            subG.add_edge(f"attractor_{attractor_id}_state_{len(states)-1}", f"attractor_{attractor_id}_state_0")
         attractor_id += 1
     G.layout(prog='dot')
     G.write('attractors_graph.dot')
