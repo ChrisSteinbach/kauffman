@@ -208,17 +208,22 @@ def create_attractor_graph(attractors):
     G = pgv.AGraph(directed=True)
     attractor_id = 0
     for attractor, count in attractors.items():
-        subgraph_name = f"cluster_{attractor_id} (Count: {count})"
+        subgraph_label = f"Attractor {attractor_id} (Count: {count})"
+        subgraph_name = f"attractor_{attractor_id}"
         subG = G.add_subgraph(name=subgraph_name, label=subgraph_name)
         states = list(attractor)  # Convert frozenset to list for indexing
         for i, state in enumerate(states):
+            state_graph_label = f"State {attractor_id}"
+            state_graph_name = f"state_{attractor_id}"
+            subA = subG.add_subgraph(name=state_graph_name, label=state_graph_label, style='dotted')
+
             state_label = ", ".join(state)
-            subG.add_node(state_label, label=state_label)
+            subA.add_node(state_label, label=state_label)
             # Add edge to next state to represent transition
             if len(states) > 1:
                 next_state = states[(i + 1) % len(states)]
                 next_state_label = ", ".join(next_state)
-                subG.add_edge(state_label, next_state_label)
+                subA.add_edge(state_label, next_state_label)
         attractor_id += 1
     G.layout(prog='dot')
     G.write('attractors_graph.dot')
