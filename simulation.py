@@ -91,7 +91,7 @@ def normalize_attractor(attractor, network):
 
     # Generate a normalized attractor based on state counts as a percentage healthy
     return frozenset(
-        f"{node_type} {(state_counts[node_type]['True'] / (state_counts[node_type]['True'] + state_counts[node_type]['False'])) > network.health_percentage[node_type]}"
+        (node_type, (state_counts[node_type]['True'] / (state_counts[node_type]['True'] + state_counts[node_type]['False'])) > network.health_percentage[node_type])
         for node_type in state_counts)
 
 
@@ -204,12 +204,16 @@ class Simulation:
         return attractor_counts
 
 def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
+    node_to_state = {key: value for key, value in state}
     # Add nodes with HTML-style labels including health and instance count
     for node_id, label in network.original_label_map.items():
         # Find the instance count by matching the full label
         instance_count = network.instance_counts.get(label, 1)  # Default to 1 if not found
-        #health = state[]
-        result_graph.add_node(f"{attractor_id}_{state_id}_{node_id}")
+        color = "green"
+        if not node_to_state[node_id]:
+            color = "red"
+        
+        result_graph.add_node(f"{attractor_id}_{state_id}_{node_id}", style="filled", label=node_id, color=color)
     # Add edges with prefixed node names
     for edge in network.edges():
         prefixed_source_id = f"{attractor_id}_{state_id}_{edge[0]}"
@@ -223,7 +227,7 @@ def create_attractor_graph(attractors, network):
     for attractor, count in attractors.items():
         subgraph_label = f"Attractor {attractor_id} (Count: {count})"
         subgraph_name = f"cluster_{attractor_id}"
-        subG = G.add_subgraph(name=subgraph_name, label=subgraph_label)
+        subG = G.add_subgraph(name=subgraph_name, label=subgraph_label, style="filled", fillcolor="lightgrey")
         states = list(attractor)  # Convert frozenset to list for indexing
         for i, state in enumerate(states):
             state_id = i
@@ -231,11 +235,10 @@ def create_attractor_graph(attractors, network):
             state_graph_name = f"cluster_{attractor_id}_state_{state_id}"
             state_name = f"attractor_{attractor_id}_state_{state_id}"
 
-            subA = subG.add_subgraph(name=state_graph_name, label=state_graph_label)
+            subA = subG.add_subgraph(name=state_graph_name, label=state_graph_label, style="filled", fillcolor="lightblue")
             if len(states) > 1:
                 subA.add_node(state_name, shape="none", label="", margin="0")
 
-            state_label = ", ".join(state)
             record_state_as_graph(attractor_id, state_id, state, network, subA)
         if len(states) > 1:
             for i in range(0, len(states)-1):
