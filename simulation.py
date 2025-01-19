@@ -224,8 +224,11 @@ def create_attractor_graph(attractors, network):
     G = pgv.AGraph(directed=True)
     G.graph_attr["rankdir"] = "LR"
     attractor_id = 0
+    total = sum(attractors.values())
+
+
     for attractor, count in attractors.items():
-        subgraph_label = f"Attractor {attractor_id} (Count: {count})"
+        subgraph_label = f"Attractor encountered {count} times. Attractor dominance {round((count / total)*100, 2)}%"
         subgraph_name = f"cluster_{attractor_id}"
         subG = G.add_subgraph(name=subgraph_name, label=subgraph_label, style="filled", fillcolor="lightgrey")
         states = list(attractor)  # Convert frozenset to list for indexing

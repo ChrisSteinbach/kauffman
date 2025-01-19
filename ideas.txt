@@ -1,12 +1,9 @@
-Should speed up attractor detection. Consider:
- 1) Using a threshold instead of a percentage so that a node-type is either up
-    or down depending on how many pods are up. Minio, for example, needs over 50%
-    of pods available. Others may be considered "up" with only one pod available.
- 2) Instead of the above, using a tuple, (node_type, percentage) and stop
-    keying on strings
+ - Using a threshold instead of a percentage so that a node-type is either up
+   or down depending on how many pods are up. Minio, for example, needs over 50%
+   of pods available. Others may be considered "up" with only one pod available.
 
  - Improve the attractor diagram. Show surviving nodes of the state only (i.e.
-   the residue), and transitions between states.
+   the residue), and transitions between states?
 
  - Produce a "nonfunctional requirements" table
 

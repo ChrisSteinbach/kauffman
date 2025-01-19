@@ -1,5 +1,6 @@
 import random
 import re
+import sys
 
 
 # Define the Boolean functions
@@ -65,50 +66,49 @@ function_map = {
     "%": percentage_func  # Special case for percentages
 }
 
+
 def interpret_function(func_str):
     """
     Parse the function string and return a function that evaluates it.
-    Supports global and type-specific conditions.
+    Supports AND (&) and OR (|) between conditions.
     """
 
-    # Parse the function string into conditions
-    conditions = func_str.split("&")
+    # Function to evaluate a single condition
+    def evaluate_condition(condition, inputs, input_types):
+        # Check for type-specific conditions
+        match = re.match(r"(\w+)\((\w+)\)", condition)
+        if match:
+            func, target_type = match.groups()
+            type_inputs = [inputs[i] for i, t in enumerate(input_types) if t == target_type]
 
-    def node_function(inputs, input_types):
-        # Evaluate each condition
-        for condition in conditions:
-            condition = condition.strip()
-
-            # Check for type-specific conditions
-            match = re.match(r"(\w+)\(([\w ]+)\)", condition)
-            if match:
-                func, target_type = match.groups()
-                type_inputs = [inputs[i] for i, t in enumerate(input_types) if t == target_type]
-
-                # Handle percentages
-                if "%" in func:
-                    percentage = int(func.replace("%", ""))
-                    if not function_map["%"](type_inputs, percentage):
-                        return False
-                elif func in function_map:
-                    if not function_map[func](type_inputs):
-                        return False
-                else:
-                    raise ValueError(f"Unknown function: {func}")
-
-            # Global conditions
-            elif "%" in condition:
-                percentage = int(condition.replace("%", ""))
-                if not function_map["%"](inputs, percentage):
-                    return False
-            elif condition in function_map:
-                if not function_map[condition](inputs):
-                    return False
+            if "%" in func:
+                percentage = int(func.replace("%", ""))
+                return function_map["%"](type_inputs, percentage)
+            elif func in function_map:
+                return function_map[func](type_inputs)
             else:
-                raise ValueError(f"Unknown function: {condition}")
+                raise ValueError(f"Unknown function: {func}")
 
-        # If all conditions pass, return True
-        return True
+        # Global conditions
+        elif "%" in condition:
+            percentage = int(condition.replace("%", ""))
+            return function_map["%"](inputs, percentage)
+        elif condition in function_map:
+            return function_map[condition](inputs)
+        else:
+            raise ValueError(f"Unknown function: {condition}")
+
+    # Parse the function string into conditions with AND (&) and OR (|)
+    def node_function(inputs, input_types):
+        # Split on OR (|)
+        or_conditions = func_str.split("|")
+        for or_condition in or_conditions:
+            and_conditions = or_condition.split("&")
+            # All AND conditions within this OR group must pass
+            if all(evaluate_condition(cond.strip(), inputs, input_types) for cond in and_conditions):
+                return True
+        # If none of the OR groups pass, return False
+        return False
 
     return node_function
 

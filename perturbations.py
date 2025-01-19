@@ -31,8 +31,9 @@ def initialise_node_states(network):
 
 def update_node_state(node, states, functions, expanded_network, input_types):
     inputs = [states[neighbor] for neighbor in expanded_network[node]]
+    inputs.insert(0, states[node])
     types = [input_types[neighbor] for neighbor in expanded_network[node]]
-    #return functions[node](inputs)
+    types.insert(0, input_types[node])
     return functions[node](inputs, types)
 
 def update_states(expanded_network, network, states):
