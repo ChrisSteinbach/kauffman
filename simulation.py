@@ -173,7 +173,7 @@ class Simulation:
         result_text.print_attractor_summary(attractor_counts, runs_with_attractor, runs_no_attractor)
         result_text.print_kauffman_parameters(K, MAX_K, N, P)
 
-        if len(attractor_counts) < 10:
+        if len(attractor_counts) < 20:
             print("Creating attractor graph")
             create_attractor_graph(attractor_counts, network)
 
@@ -224,10 +224,10 @@ def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
         # Find the instance count by matching the full label
         instance_count = network.instance_counts.get(label, 1)  # Default to 1 if not found
         color = "green"
-        if not node_to_state[node_id]:
+        if not node_to_state[label]:
             color = "red"
         
-        result_graph.add_node(f"{attractor_id}_{state_id}_{node_id}", style="filled", label=node_id, color=color)
+        result_graph.add_node(f"{attractor_id}_{state_id}_{node_id}", style="filled", label=label, color=color)
     # Add edges with prefixed node names
     for edge in network.edges():
         prefixed_source_id = f"{attractor_id}_{state_id}_{edge[0]}"

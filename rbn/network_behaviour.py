@@ -76,7 +76,7 @@ def interpret_function(func_str):
     # Function to evaluate a single condition
     def evaluate_condition(condition, inputs, input_types):
         # Check for type-specific conditions
-        match = re.match(r"(\w+)\((\w+)\)", condition)
+        match = re.match(r"(\w+)\(([\w ]+)\)", condition)
         if match:
             func, target_type = match.groups()
             type_inputs = [inputs[i] for i, t in enumerate(input_types) if t == target_type]
