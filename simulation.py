@@ -10,6 +10,20 @@ import os
 import pygraphviz as pgv
 
 
+def normalize_frozenset(fset):
+    """Convert frozenset into a sorted tuple for consistent ordering."""
+    return tuple(sorted(fset))
+
+def normalize_tuple(cyclic_tuple):
+    """Normalize a tuple of frozensets as a cycle."""
+    # First, normalize each frozenset to ensure consistent order
+    normalized_parts = tuple(normalize_frozenset(fset) for fset in cyclic_tuple)
+
+    # Generate all rotations of the tuple
+    rotations = [normalized_parts[i:] + normalized_parts[:i] for i in range(len(normalized_parts))]
+
+    # Return the lexicographically smallest rotation
+    return min(rotations)
 
 def initialise_node_states(healthy_node_states, network, stage):
     states = healthy_node_states.copy()
@@ -199,7 +213,7 @@ class Simulation:
 
     def update_attractor_counts(self, attractor_counts, states):
         # Update attractor counts
-        attractor_state = frozenset(states)
+        attractor_state = normalize_tuple(tuple(states))
         attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
         return attractor_counts
 
@@ -231,7 +245,7 @@ def create_attractor_graph(attractors, network):
         subgraph_label = f"Attractor encountered {count} times. Attractor dominance {round((count / total)*100, 2)}%"
         subgraph_name = f"cluster_{attractor_id}"
         subG = G.add_subgraph(name=subgraph_name, label=subgraph_label, style="filled", fillcolor="lightgrey")
-        states = list(attractor)  # Convert frozenset to list for indexing
+        states = list(attractor)  # Convert tuple to list for indexing
         for i, state in enumerate(states):
             state_id = i
             state_graph_label = f"State {state_id}"
