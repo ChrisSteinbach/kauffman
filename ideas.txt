@@ -1,6 +1,4 @@
- - Using a threshold instead of a percentage so that a node-type is either up
-   or down depending on how many pods are up. Minio, for example, needs over 50%
-   of pods available. Others may be considered "up" with only one pod available.
+ - Add support for redundancy across multiple clusters or datacenters
 
  - Improve the attractor diagram. Show surviving nodes of the state only (i.e.
    the residue), and transitions between states?
@@ -11,6 +9,3 @@
 
  - Find a way to model openshift, perhaps with CPU, Memory and Disk as nodes
    that can be placed as dependencies
-
- - Should remove Health nodes from attractor sequence
-
