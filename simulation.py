@@ -29,8 +29,7 @@ def initialise_node_states(healthy_node_states, network, stage):
     states = healthy_node_states.copy()
 
     # Prepare a list of nodes that can potentially fail, excluding health indicators
-    potential_nodes_to_fail = [node for node in network.expanded_network if
-                               node not in network.get_health_indicator_nodes()]
+    potential_nodes_to_fail = [node for node in network.expanded_network]
 
     # Introduce failures randomly among the potential nodes
     nodes_to_fail = random.sample(potential_nodes_to_fail, min(len(potential_nodes_to_fail), stage))
@@ -38,13 +37,6 @@ def initialise_node_states(healthy_node_states, network, stage):
         states[node] = False
 
     return states
-
-
-def evaluate_network_health(states, health_indicator_nodes):
-    if len(health_indicator_nodes) == 0:
-        return 0
-    return sum(states[node] for node in health_indicator_nodes) / len(health_indicator_nodes)
-
 
 def calculate_average_health_by_type(node_health_stats):
     # Group and calculate average health by node type
@@ -58,14 +50,10 @@ def calculate_average_health_by_type(node_health_stats):
     return average_type_health
 
 
-def evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum, node_health_stats,
-                               states):
-    # Evaluate network health and update individual node health
-    health_sum += evaluate_network_health(states, health_indicator_nodes)
+def evaluate_and_update_health(expanded_network, node_health_stats, states):
+    # Udate individual node health
     for node in expanded_network:
         node_health_stats[node].append(states[node])
-    return health_sum
-
 
 def record_result_as_subgraph(average_type_health, network, result_graph, stage):
     result_graph.add_subgraph(stage)
@@ -110,9 +98,8 @@ def normalize_attractor(attractor, network):
 
 
 def update_node_state(node, states, functions, expanded_network, input_types):
-    inputs = [states[neighbor] for neighbor in expanded_network[node]]
-    types = [input_types[neighbor] for neighbor in expanded_network[node]]
-    #return functions[node](inputs)
+    inputs = [states[neighbour] for neighbour in expanded_network[node]]
+    types = [input_types[neighbour] for neighbour in expanded_network[node]]
     return functions[node](inputs, types)
 
 def update_states(expanded_network, network, states):
@@ -147,11 +134,9 @@ class Simulation:
             # To store individual node health across runs
             node_health_stats = {node: [] for node in expanded_network}
 
-            health_sum = 0
-
             for run in range(self.num_runs_per_stage):
-                attractor_counts, health_sum, total_evaluations, total_on_states, attractor_found = self.run_single_simulation(
-                    attractor_counts, expanded_network, health_indicator_nodes, health_sum, healthy_node_states,
+                attractor_counts, total_evaluations, total_on_states, attractor_found = self.run_single_simulation(
+                    attractor_counts, expanded_network, health_indicator_nodes, healthy_node_states,
                     network, node_health_stats, stage, total_evaluations, total_on_states)
                 if attractor_found:
                     runs_with_attractor = runs_with_attractor + 1
@@ -159,10 +144,9 @@ class Simulation:
                     runs_no_attractor = runs_no_attractor + 1
 
             # Calculate average health for this stage
-            average_health = health_sum / self.num_runs_per_stage
             average_type_health = calculate_average_health_by_type(node_health_stats)
 
-            result_text.print_stage_summary(stage, average_health, average_type_health)
+            result_text.print_stage_summary(stage, average_type_health)
             record_result_as_subgraph(average_type_health, network, result_graph, stage)
 
         P = total_on_states / total_evaluations if total_evaluations > 0 else 0
@@ -181,7 +165,7 @@ class Simulation:
         result_graph.add_info_box(K, MAX_K, N, P)
         return P, len(attractor_counts)
 
-    def run_single_simulation(self, attractor_counts, expanded_network, health_indicator_nodes, health_sum,
+    def run_single_simulation(self, attractor_counts, expanded_network, health_indicator_nodes,
                               healthy_node_states, network, node_health_stats, stage, total_evaluations,
                               total_on_states):
         state_history = []
@@ -204,12 +188,11 @@ class Simulation:
                 break
             else:
                 state_history.append(current_state)
-        health_sum = evaluate_and_update_health(expanded_network, health_indicator_nodes, health_sum,
-                                                node_health_stats, states)
+        evaluate_and_update_health(expanded_network, node_health_stats, states)
         if attractor_found:
             # Process the found attractor sequence
             attractor_counts = self.update_attractor_counts(attractor_counts, attractor_sequence)
-        return attractor_counts, health_sum, total_evaluations, total_on_states, attractor_found
+        return attractor_counts, total_evaluations, total_on_states, attractor_found
 
     def update_attractor_counts(self, attractor_counts, states):
         # Update attractor counts

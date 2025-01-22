@@ -34,20 +34,14 @@ class KauffmanNetwork:
         self._load_network()
         self._expand_network()
         self.input_types = {}
-        self.health_indicator_nodes = [node for node in self.expanded_network if node.startswith("Health")]
 
         # Calculating total connections (Inputs + Outputs) for each non-health node
-        self.node_connections = {node: 0 for node in self.expanded_network if node not in self.health_indicator_nodes}
-
-        # Count Outputs
-        #for node, neighbors in self.expanded_network.items():
-            #if node not in self.health_indicator_nodes:
-                #self.node_connections[node] += len([n for n in neighbors if n not in self.health_indicator_nodes])
+        self.node_connections = {node: 0 for node in self.expanded_network}
 
         # Count Inputs
         for node in self.node_connections:
             for source, targets in self.expanded_network.items():
-                if node in targets and source not in self.health_indicator_nodes:
+                if node in targets and source:
                     self.node_connections[node] += 1
         output_expanded_network_to_dot(self.expanded_network)
 
@@ -65,9 +59,6 @@ class KauffmanNetwork:
     def edges(self):
         return self.network.edges()
 
-    def get_health_indicator_nodes(self):
-        return self.health_indicator_nodes
-
     def get_N(self):
         # N - Total Number of Nodes
         return len(self.expanded_network)
@@ -84,7 +75,7 @@ class KauffmanNetwork:
     def _load_network(self):
         for node in self.network.nodes():
             node_type = node.attr['label']
-            health_perc = int(node.attr.get('health_perc') or 0)
+            health_perc = float(node.attr.get('health_perc') or 0)
             self.health_percentage[node_type] = health_perc
 
             # Create a mapping from node names to node types

@@ -16,8 +16,7 @@ def debug_message(message):
 def initialise_node_states(network):
 
     # Prepare a list of nodes that can potentially fail, excluding health indicators
-    potential_nodes_to_fail = [node for node in network.expanded_network if
-                               node not in network.get_health_indicator_nodes()]
+    potential_nodes_to_fail = [node for node in network.expanded_network]
 
     states = {node: True for node in network.expanded_network}
 
@@ -30,10 +29,8 @@ def initialise_node_states(network):
 
 
 def update_node_state(node, states, functions, expanded_network, input_types):
-    inputs = [states[neighbor] for neighbor in expanded_network[node]]
-    inputs.insert(0, states[node])
-    types = [input_types[neighbor] for neighbor in expanded_network[node]]
-    types.insert(0, input_types[node])
+    inputs = [states[neighbour] for neighbour in expanded_network[node]]
+    types = [input_types[neighbour] for neighbour in expanded_network[node]]
     return functions[node](inputs, types)
 
 def update_states(expanded_network, network, states):

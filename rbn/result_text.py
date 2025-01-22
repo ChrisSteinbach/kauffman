@@ -1,6 +1,6 @@
 class ResultText:
-    def print_stage_summary(self, stage, average_health, average_type_health):
-        print(f"\nStage {stage}: Average Network Health = {average_health}")
+    def print_stage_summary(self, stage, average_type_health):
+        print(f"\nStage {stage}")
         print("Average Health of Node Types:")
         for node_type, health in average_type_health.items():
             print(f"  {node_type}: {health}")
@@ -13,12 +13,13 @@ class ResultText:
         print(f"P (Bias in Boolean Functions): {P}")
 
     def print_attractor_summary(self, attractor_counts, runs_with_attractor, runs_no_attractor):
+        print()
         print(f"Number of attractors: {len(attractor_counts)}")
         print(f"Percentage of runs with attractors: {runs_with_attractor / (runs_with_attractor + runs_no_attractor)}")
 
 
 class NullResultText:
-    def print_stage_summary(self, stage, average_health, average_type_health):
+    def print_stage_summary(self, stage, average_type_health):
         pass
 
     def print_kauffman_parameters(self, K, MAX_K, N, P):
