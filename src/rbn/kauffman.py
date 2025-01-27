@@ -1,11 +1,11 @@
-import pygraphviz as pgv
 import re
+
+import pygraphviz as pgv
 from .network_behaviour import interpret_function
-import sys
 
 
 def output_expanded_network_to_dot(expanded_network, output_filename="expanded.dot"):
-    with open(output_filename, "w") as f:
+    with open(output_filename, "w", encoding="utf-8") as f:
         f.write("digraph ExpandedNetwork {\n")
 
         # Write nodes
@@ -59,15 +59,15 @@ class KauffmanNetwork:
     def edges(self):
         return self.network.edges()
 
-    def get_N(self):
+    def get_n(self):
         # N - Total Number of Nodes
         return len(self.expanded_network)
 
-    def get_average_K(self):
-        N = self.get_N()
-        return sum(self.node_connections.values()) / N if N > 0 else 0
+    def get_average_k(self):
+        n = self.get_n()
+        return sum(self.node_connections.values()) / n if n > 0 else 0
 
-    def get_max_K(self):
+    def get_max_k(self):
         max_k = (
             max((value, key) for (key, value) in self.node_connections.items())
             if self.node_connections
@@ -105,7 +105,7 @@ class KauffmanNetwork:
 
     def _expand_edges(self):
         # Track the number of connections for each target instance
-        target_connections_count = dict()
+        target_connections_count = {}
 
         for target in self.expanded_network.keys():
             target_connections_count[target] = 0

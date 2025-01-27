@@ -191,9 +191,9 @@ class Simulation:
             record_result_as_subgraph(average_type_health, network, result_graph, stage)
 
         P = total_on_states / total_evaluations if total_evaluations > 0 else 0
-        N = network.get_N()
-        K = network.get_average_K()
-        MAX_K = network.get_max_K()
+        N = network.get_n()
+        K = network.get_average_k()
+        MAX_K = network.get_max_k()
 
         result_text.print_attractor_summary(
             attractor_counts, runs_with_attractor, runs_no_attractor
