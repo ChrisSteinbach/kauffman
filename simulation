@@ -1,2 +1,0 @@
-#!/bin/bash
-python simulation.py $1 && ./copy combined_stages.dot

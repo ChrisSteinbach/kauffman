@@ -1,0 +1,8 @@
+Metadata-Version: 2.2
+Name: kauffman
+Version: 0.1.0
+Summary: Random Boolean Network simulation
+Author: Chris Steinbach
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: requests
