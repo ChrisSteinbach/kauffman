@@ -1,13 +1,13 @@
-#!/usr/bin/python3.12
+import os
 import random
-import numpy as np
 import re
+import sys
+
+import numpy as np
+import pygraphviz as pgv
 from rbn import kauffman
 from rbn.result_graph import ResultGraph, NullResultGraph
 from rbn.result_text import ResultText, NullResultText
-import sys
-import os
-import pygraphviz as pgv
 
 
 def normalize_frozenset(fset):
@@ -34,7 +34,7 @@ def initialise_node_states(healthy_node_states, network, stage):
     states = healthy_node_states.copy()
 
     # Prepare a list of nodes that can potentially fail, excluding health indicators
-    potential_nodes_to_fail = [node for node in network.expanded_network]
+    potential_nodes_to_fail = list(network.expanded_network)
 
     # Introduce failures randomly among the potential nodes
     nodes_to_fail = random.sample(
@@ -84,15 +84,15 @@ def record_result_as_subgraph(average_type_health, network, result_graph, stage)
 def remove_trailing_integer(input_string):
     pattern = r".*\s\d+$"
 
-    # Check if the input string matches the pattern
+    # Check if the input string matches the pattern.
+    # If it does, remove the last space and the digits following it.
     if re.match(pattern, input_string):
-        # If it does, remove the last space and the digits following it
         # The regex here matches a space (\s) followed by one or more digits (\d+) at the end of the string ($)
         # and replaces it with an empty string, effectively removing it.
         return re.sub(r"\s\d+$", "", input_string)
-    else:
-        # If the input string does not match the pattern, return it unchanged
-        return input_string
+
+    # If the input string does not match the pattern, return it unchanged
+    return input_string
 
 
 def normalize_attractor(attractor, network):
@@ -162,7 +162,7 @@ class Simulation:
             # To store individual node health across runs
             node_health_stats = {node: [] for node in expanded_network}
 
-            for run in range(self.num_runs_per_stage):
+            for _ in range(self.num_runs_per_stage):
                 (
                     attractor_counts,
                     total_evaluations,
@@ -190,22 +190,22 @@ class Simulation:
             result_text.print_stage_summary(stage, average_type_health)
             record_result_as_subgraph(average_type_health, network, result_graph, stage)
 
-        P = total_on_states / total_evaluations if total_evaluations > 0 else 0
-        N = network.get_n()
-        K = network.get_average_k()
-        MAX_K = network.get_max_k()
+        p = total_on_states / total_evaluations if total_evaluations > 0 else 0
+        n = network.get_n()
+        k = network.get_average_k()
+        max_k = network.get_max_k()
 
         result_text.print_attractor_summary(
             attractor_counts, runs_with_attractor, runs_no_attractor
         )
-        result_text.print_kauffman_parameters(K, MAX_K, N, P)
+        result_text.print_kauffman_parameters(k, max_k, n, p)
 
         if len(attractor_counts) < 20:
             print("Creating attractor graph")
             create_attractor_graph(attractor_counts, network)
 
-        result_graph.add_info_box(K, MAX_K, N, P)
-        return P, len(attractor_counts)
+        result_graph.add_info_box(k, max_k, n, p)
+        return p, len(attractor_counts)
 
     def run_single_simulation(
         self,
