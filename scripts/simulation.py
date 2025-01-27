@@ -6,6 +6,7 @@ import sys
 import numpy as np
 import pygraphviz as pgv
 from rbn import kauffman
+from rbn.kauffman import update_states
 from rbn.result_graph import ResultGraph, AbstractResultGraph
 from rbn.result_text import ResultText, AbstractResultText
 
@@ -118,22 +119,6 @@ def normalize_attractor(attractor, network):
         )
         for node_type in state_counts
     )
-
-
-def update_node_state(node, states, functions, expanded_network, input_types):
-    inputs = [states[neighbour] for neighbour in expanded_network[node]]
-    types = [input_types[neighbour] for neighbour in expanded_network[node]]
-    return functions[node](inputs, types)
-
-
-def update_states(expanded_network, network, states):
-    # Update states based on Boolean functions and adjusted P values
-    new_states = states.copy()
-    for node in expanded_network:
-        new_states[node] = update_node_state(
-            node, states, network.functions, expanded_network, network.input_types
-        )
-    return new_states
 
 
 def update_attractor_counts(attractor_counts, states):

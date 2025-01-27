@@ -4,6 +4,22 @@ import pygraphviz as pgv
 from .network_behaviour import interpret_function
 
 
+def update_node_state(node, states, functions, expanded_network, input_types):
+    inputs = [states[neighbour] for neighbour in expanded_network[node]]
+    types = [input_types[neighbour] for neighbour in expanded_network[node]]
+    return functions[node](inputs, types)
+
+
+def update_states(expanded_network, network, states):
+    # Update states based on Boolean functions and adjusted P values
+    new_states = states.copy()
+    for node in expanded_network:
+        new_states[node] = update_node_state(
+            node, states, network.functions, expanded_network, network.input_types
+        )
+    return new_states
+
+
 def output_expanded_network_to_dot(expanded_network, output_filename="expanded.dot"):
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write("digraph ExpandedNetwork {\n")
