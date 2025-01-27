@@ -9,28 +9,7 @@ from rbn import kauffman
 from rbn.kauffman import update_states
 from rbn.result_graph import ResultGraph, AbstractResultGraph
 from rbn.result_text import ResultText, AbstractResultText
-
-
-def normalize_frozenset(frozen_set_instance):
-    """Convert frozenset into a sorted tuple for consistent ordering."""
-    return tuple(sorted(frozen_set_instance))
-
-
-def normalize_tuple(cyclic_tuple):
-    """Normalize a tuple of frozensets as a cycle."""
-    # First, normalize each frozenset to ensure consistent order
-    normalized_parts = tuple(
-        normalize_frozenset(frozen_set_instance) for frozen_set_instance in cyclic_tuple
-    )
-
-    # Generate all rotations of the tuple
-    rotations = [
-        normalized_parts[i:] + normalized_parts[:i]
-        for i in range(len(normalized_parts))
-    ]
-
-    # Return the lexicographically smallest rotation
-    return min(rotations)
+from rbn.attractors import Attractors
 
 
 def initialise_node_states(healthy_node_states, network, stage):
@@ -121,13 +100,6 @@ def normalize_attractor(attractor, network):
     )
 
 
-def update_attractor_counts(attractor_counts, states):
-    # Update attractor counts
-    attractor_state = normalize_tuple(tuple(states))
-    attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
-    return attractor_counts
-
-
 class Simulation:
     def __init__(self, num_stages):
         self.num_stages = num_stages
@@ -144,9 +116,9 @@ class Simulation:
 
         healthy_node_states = {node: True for node in expanded_network}
 
+        attractors = Attractors()
         total_on_states = 0
         total_evaluations = 0
-        attractor_counts = {}
         runs_with_attractor = 0
         runs_no_attractor = 0
 
@@ -156,12 +128,11 @@ class Simulation:
 
             for _ in range(self.num_runs_per_stage):
                 (
-                    attractor_counts,
                     total_evaluations,
                     total_on_states,
                     attractor_found,
                 ) = self.run_single_simulation(
-                    attractor_counts,
+                    attractors,
                     expanded_network,
                     healthy_node_states,
                     network,
@@ -187,20 +158,20 @@ class Simulation:
         max_k = network.get_max_k()
 
         result_text.print_attractor_summary(
-            attractor_counts, runs_with_attractor, runs_no_attractor
+            attractors, runs_with_attractor, runs_no_attractor
         )
         result_text.print_kauffman_parameters(k, max_k, n, p)
 
-        if len(attractor_counts) < 20:
+        if attractors.count() < 20:
             print("Creating attractor graph")
-            create_attractor_graph(attractor_counts, network)
+            create_attractor_graph(attractors, network)
 
         result_graph.add_info_box(k, max_k, n, p)
-        return p, len(attractor_counts)
+        return p, attractors.count()
 
     def run_single_simulation(
         self,
-        attractor_counts,
+        attractors,
         expanded_network,
         healthy_node_states,
         network,
@@ -232,10 +203,8 @@ class Simulation:
         evaluate_and_update_health(expanded_network, node_health_stats, states)
         if attractor_found:
             # Process the found attractor sequence
-            attractor_counts = update_attractor_counts(
-                attractor_counts, attractor_sequence
-            )
-        return attractor_counts, total_evaluations, total_on_states, attractor_found
+            attractors.update_attractor_counts(attractor_sequence)
+        return total_evaluations, total_on_states, attractor_found
 
 
 def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
@@ -263,7 +232,7 @@ def create_attractor_graph(attractors, network):
     g = pgv.AGraph(directed=True)
     g.graph_attr["rankdir"] = "LR"
     attractor_id = 0
-    total = sum(attractors.values())
+    total = attractors.total_runs()
 
     for attractor, count in attractors.items():
         subgraph_label = f"Attractor encountered {count} times. Attractor dominance {round((count / total)*100, 2)}%"

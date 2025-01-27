@@ -6,7 +6,7 @@ class AbstractResultText:
         pass
 
     def print_attractor_summary(
-        self, attractor_counts, runs_with_attractor, runs_no_attractor
+        self, attractors, runs_with_attractor, runs_no_attractor
     ):
         pass
 
@@ -26,10 +26,10 @@ class ResultText(AbstractResultText):
         print(f"P (Bias in Boolean Functions): {P}")
 
     def print_attractor_summary(
-        self, attractor_counts, runs_with_attractor, runs_no_attractor
+        self, attractors, runs_with_attractor, runs_no_attractor
     ):
         print()
-        print(f"Number of attractors: {len(attractor_counts)}")
+        print(f"Number of attractors: {attractors.count()}")
         print(
             f"Percentage of runs with attractors: {runs_with_attractor / (runs_with_attractor + runs_no_attractor)}"
         )
