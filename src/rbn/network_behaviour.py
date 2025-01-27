@@ -46,9 +46,11 @@ def random_func(inputs):
         choices = [bool(value) for value in inputs]
     return random.choice(choices)
 
+
 def copy_func(inputs):
     if len(inputs):
-      return inputs[0]
+        return inputs[0]
+
 
 function_map = {
     "all": all_func,
@@ -63,7 +65,7 @@ function_map = {
     "minority": minority_func,
     "random": random_func,
     "copy": copy_func,
-    "%": percentage_func  # Special case for percentages
+    "%": percentage_func,  # Special case for percentages
 }
 
 
@@ -79,7 +81,9 @@ def interpret_function(func_str):
         match = re.match(r"(\w+|\d+%)\(([\w ]+)\)", condition)
         if match:
             func, target_type = match.groups()
-            type_inputs = [inputs[i] for i, t in enumerate(input_types) if t == target_type]
+            type_inputs = [
+                inputs[i] for i, t in enumerate(input_types) if t == target_type
+            ]
 
             if "%" in func:
                 percentage = int(func.replace("%", ""))
@@ -105,10 +109,12 @@ def interpret_function(func_str):
         for or_condition in or_conditions:
             and_conditions = or_condition.split("&")
             # All AND conditions within this OR group must pass
-            if all(evaluate_condition(cond.strip(), inputs, input_types) for cond in and_conditions):
+            if all(
+                evaluate_condition(cond.strip(), inputs, input_types)
+                for cond in and_conditions
+            ):
                 return True
         # If none of the OR groups pass, return False
         return False
 
     return node_function
-

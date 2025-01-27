@@ -30,9 +30,13 @@ def get_node_color(health):
 def fix_node_alignment(master_graph_dot, num_stages):
     # Dynamically generate the alignment snippet based on the number of stages
     # Create align_X node declarations with style=invis
-    align_node_declarations = '\n\t\t'.join([f"align_{i} [style=invis];" for i in range(num_stages)])
+    align_node_declarations = "\n\t\t".join(
+        [f"align_{i} [style=invis];" for i in range(num_stages)]
+    )
     # Create align_X -> align_Y edges with style=invis
-    align_edges = ' -> '.join([f"align_{i}" for i in range(num_stages)]) + ' [style=invis];'
+    align_edges = (
+        " -> ".join([f"align_{i}" for i in range(num_stages)]) + " [style=invis];"
+    )
     # Complete alignment snippet
     alignment_snippet = f"""
     \tsubgraph align {{
@@ -45,7 +49,9 @@ def fix_node_alignment(master_graph_dot, num_stages):
     for i in range(num_stages):
         alignment_snippet += f"\n\talign_{i} -> invisible_{i} [style=invis];"
     # Insert the alignment snippet before the last closing brace
-    modified_dot_content = master_graph_dot.rsplit("}", 1)[0] + alignment_snippet + "}\n"
+    modified_dot_content = (
+        master_graph_dot.rsplit("}", 1)[0] + alignment_snippet + "}\n"
+    )
     return modified_dot_content
 
 
@@ -55,7 +61,9 @@ class ResultGraph:
         self.stage_graph = None
 
     def add_subgraph(self, stage):
-        self.stage_graph = self.master_graph.add_subgraph(name=f"cluster_{stage}", label=f"Random failures = {stage}")
+        self.stage_graph = self.master_graph.add_subgraph(
+            name=f"cluster_{stage}", label=f"Random failures = {stage}"
+        )
 
         # Add an invisible node to this subgraph for ordering an alignment
         invisible_node_id = f"invisible_{stage}"
@@ -71,8 +79,15 @@ class ResultGraph:
 
         # Prefix node ID with stage number
         prefixed_node_id: str = f"{stage}_{node_id}"
-        self.stage_graph.add_node(prefixed_node_id, label=html_label, shape="rectangle", color=border_color,
-                                  fillcolor=fill_color, style="filled", penwidth=penwidth)
+        self.stage_graph.add_node(
+            prefixed_node_id,
+            label=html_label,
+            shape="rectangle",
+            color=border_color,
+            fillcolor=fill_color,
+            style="filled",
+            penwidth=penwidth,
+        )
 
     def add_edge(self, edge, stage):
         prefixed_source_id = f"{stage}_{edge[0]}"
@@ -83,7 +98,13 @@ class ResultGraph:
     def add_info_box(self, K, MAX_K, N, P):
         # Add an info box node
         info_box_label = create_info_box_label(N, K, MAX_K, P)
-        self.master_graph.add_node("info_box", label=info_box_label, shape="note", style="filled", color="lightgrey")
+        self.master_graph.add_node(
+            "info_box",
+            label=info_box_label,
+            shape="note",
+            style="filled",
+            color="lightgrey",
+        )
 
     def write(self, num_stages, filename):
         # Output the combined master graph to a file

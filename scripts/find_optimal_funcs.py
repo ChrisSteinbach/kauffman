@@ -26,7 +26,9 @@ def run_simulation(superset, N, K, min_instances, max_instances, num_simulations
     p_values = []
     for _ in range(num_simulations):
         connections = generate_network_constraints(N, K)
-        dot_string = generate_dot_string(connections, superset, min_instances, max_instances)
+        dot_string = generate_dot_string(
+            connections, superset, min_instances, max_instances
+        )
         network = KauffmanNetwork(dot_string)
         simulation = Simulation(5)  # Assume initialization is correct
         p_value = simulation.run(network)
@@ -38,17 +40,27 @@ def run_simulation(superset, N, K, min_instances, max_instances, num_simulations
 
 
 def find_optimal_set(supersets, N, K, min_instances, max_instances):
-    optimal_p_diff = float('inf')
-    optimal_std_dev = float('inf')
+    optimal_p_diff = float("inf")
+    optimal_std_dev = float("inf")
     optimal_set = None
 
     with ProcessPoolExecutor() as executor:
-        futures = {executor.submit(run_simulation, superset, N, K, min_instances, max_instances, 10): superset for
-                   superset in supersets}
-        for future in tqdm(concurrent.futures.as_completed(futures), total=len(supersets), desc="Simulating"):
+        futures = {
+            executor.submit(
+                run_simulation, superset, N, K, min_instances, max_instances, 10
+            ): superset
+            for superset in supersets
+        }
+        for future in tqdm(
+            concurrent.futures.as_completed(futures),
+            total=len(supersets),
+            desc="Simulating",
+        ):
             superset, p_diff, std_dev_p_value = future.result()
             if p_diff < optimal_p_diff or (
-                    is_close(p_diff, optimal_p_diff, tolerance=0.01) and std_dev_p_value < optimal_std_dev):
+                is_close(p_diff, optimal_p_diff, tolerance=0.01)
+                and std_dev_p_value < optimal_std_dev
+            ):
                 optimal_std_dev = std_dev_p_value
                 optimal_p_diff = p_diff
                 optimal_set = superset

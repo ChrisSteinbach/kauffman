@@ -26,7 +26,9 @@ def run_simulation(superset, N, K, min_instances, max_instances, num_simulations
     max_attractor_count = 0
     for _ in range(num_simulations):
         connections = generate_network_constraints(N, K)
-        dot_string = generate_dot_string(connections, superset, min_instances, max_instances)
+        dot_string = generate_dot_string(
+            connections, superset, min_instances, max_instances
+        )
         network = KauffmanNetwork(dot_string)
         simulation = Simulation(5)  # Assume initialization is correct
         p_value, attractor_count = simulation.run(network)
@@ -39,9 +41,17 @@ def find_optimal_set(supersets, N, K, min_instances, max_instances):
     optimal_set = None
 
     with ProcessPoolExecutor() as executor:
-        futures = {executor.submit(run_simulation, superset, N, K, min_instances, max_instances, 10): superset for
-                   superset in supersets}
-        for future in tqdm(concurrent.futures.as_completed(futures), total=len(supersets), desc="Simulating"):
+        futures = {
+            executor.submit(
+                run_simulation, superset, N, K, min_instances, max_instances, 10
+            ): superset
+            for superset in supersets
+        }
+        for future in tqdm(
+            concurrent.futures.as_completed(futures),
+            total=len(supersets),
+            desc="Simulating",
+        ):
             superset, attractor_count = future.result()
             if attractor_count > max_attractor_count:
                 max_attractor_count = attractor_count
