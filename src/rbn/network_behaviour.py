@@ -32,11 +32,11 @@ def xor_func(inputs, _):
 
 
 def majority_func(inputs, _):
-    return sum(inputs) > len(inputs) / 2
+    return sum(inputs) >= len(inputs) / 2
 
 
 def minority_func(inputs, _):
-    return sum(inputs) > len(inputs) / 2
+    return sum(inputs) < len(inputs) / 2
 
 
 def random_func(inputs, _):
