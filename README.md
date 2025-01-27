@@ -16,6 +16,9 @@ To use the project in a development environment, clone the repository and instal
 ```bash
 git clone https://github.com/ChrisSteinbach/kauffman.git
 cd kauffman
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 pip install -e .
 ```
 
