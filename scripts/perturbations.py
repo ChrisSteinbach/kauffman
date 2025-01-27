@@ -1,12 +1,11 @@
 #!/usr/bin/python
-import random
-import numpy as np
-import re
-from rbn import kauffman
-import os
-import time
 import curses
+import os
+import random
 import sys
+import time
+
+from rbn import kauffman
 
 
 def debug_message(message):

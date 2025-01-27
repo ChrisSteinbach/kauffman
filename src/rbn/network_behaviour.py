@@ -1,26 +1,25 @@
 import random
 import re
-import sys
 
 
 # Define the Boolean functions
-def all_func(inputs):
+def all_func(inputs, _):
     return all(inputs)
 
 
-def and_func(inputs):
+def and_func(inputs, _):
     return all(inputs)
 
 
-def or_func(inputs):
+def or_func(inputs, _):
     return any(inputs)
 
 
-def nand_func(inputs):
+def nand_func(inputs, _):
     return not all(inputs)
 
 
-def nor_func(inputs):
+def nor_func(inputs, _):
     return not any(inputs)
 
 
@@ -28,26 +27,26 @@ def percentage_func(inputs, percentage):
     return sum(inputs) >= len(inputs) * (percentage / 100)
 
 
-def xor_func(inputs):
+def xor_func(inputs, _):
     return sum(inputs) % 2 == 1
 
 
-def majority_func(inputs):
+def majority_func(inputs, _):
     return sum(inputs) > len(inputs) / 2
 
 
-def minority_func(inputs):
+def minority_func(inputs, _):
     return sum(inputs) > len(inputs) / 2
 
 
-def random_func(inputs):
+def random_func(inputs, _):
     choices = [True, False]
     if len(inputs) > 0:
         choices = [bool(value) for value in inputs]
     return random.choice(choices)
 
 
-def copy_func(inputs):
+def copy_func(inputs, _):
     if len(inputs):
         return inputs[0]
 
@@ -89,7 +88,7 @@ def interpret_function(func_str):
                 percentage = int(func.replace("%", ""))
                 return function_map["%"](type_inputs, percentage)
             elif func in function_map:
-                return function_map[func](type_inputs)
+                return function_map[func](type_inputs, None)
             else:
                 raise ValueError(f"Unknown function: {func}")
 
@@ -98,7 +97,7 @@ def interpret_function(func_str):
             percentage = int(condition.replace("%", ""))
             return function_map["%"](inputs, percentage)
         elif condition in function_map:
-            return function_map[condition](inputs)
+            return function_map[condition](inputs, None)
         else:
             raise ValueError(f"Unknown function: {condition}")
 
