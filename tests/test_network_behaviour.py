@@ -48,7 +48,7 @@ class TestInterpretFunction(unittest.TestCase):
         types = ["CPU", "CPU", "CPU", "CPU"]
         self.assertTrue(func(inputs, types))
 
-    def test_complex_combination(self):
+    def test_and_combination(self):
         """
         Example with multiple conditions using your custom syntax, e.g. "one(A) & 50%(B)".
         This means: 'At least one input of type A is True' AND 'At least 50% of B-type inputs are True.'
@@ -69,12 +69,32 @@ class TestInterpretFunction(unittest.TestCase):
         # case3: A is satisfied but B < 50% => fails
         inputs = [True, False, True, False]
         types = ["A", "A", "B", "B"]
-        # A has a True => pass. But among B => 1/2 => 50% => Actually this is exactly 50%.
-        # Depending on your interpretation, "50%" might be >= 50 or > 50.
-        # Let's assume it means >= 50 => that means pass here. Adjust the logic or test as needed.
-        self.assertTrue(
-            func(inputs, types)
-        )  # or self.assertFalse(...) if your logic is strict ">" 50%
+        # A has a True => pass. But among B => 1/2 => 50% => This is exactly 50%.
+        self.assertTrue(func(inputs, types))
+
+    def test_or_combination(self):
+        """
+        Example with multiple conditions using your custom syntax, e.g. "one(A) | 50%(B)".
+        This means: 'At least one input of type A is True' OR 'At least 50% of B-type inputs are True.'
+        """
+        func = interpret_function("one(A) | 50%(B)")
+        # case1: A=[False,True], B=[True, False] => B has 2 inputs, 1 is True => 50% => pass
+        # At least one A is True => pass
+        # => entire condition => True
+        inputs = [False, True, True, False]
+        types = ["A", "A", "B", "B"]
+        self.assertTrue(func(inputs, types))
+
+        # case2: none of type A is True => fails the 'one(A)' condition
+        inputs = [False, False, True, False]
+        types = ["A", "A", "B", "B"]
+        self.assertTrue(func(inputs, types))
+
+        # case3: A is satisfied but B < 50% => fails
+        inputs = [True, False, True, False]
+        types = ["A", "A", "B", "B"]
+        # A has a True => pass. But among B => 1/2 => 50% => This is exactly 50%.
+        self.assertTrue(func(inputs, types))
 
     def test_xor(self):
         """
