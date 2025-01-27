@@ -1,6 +1,23 @@
 import pygraphviz as pgv
 
 
+class AbstractResultGraph:
+    def add_subgraph(self, stage):
+        pass
+
+    def add_node(self, node_id, stage, label, health, instance_count):
+        pass
+
+    def add_edge(self, edge, stage):
+        pass
+
+    def add_info_box(self, K, MAX_K, N, P):
+        pass
+
+    def write(self, num_stages, filename):
+        pass
+
+
 def create_info_box_label(N, K, MAX_K, P):
     return f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): {N}</TD></TR><TR><TD>K (Avg. Inputs per Node): {K:.2f}</TD></TR><TR><TD>K (Max Inputs per Node): {MAX_K:.2f}</TD></TR><TR><TD>P (Bias in Boolean Functions): {P}</TD></TR></TABLE>>'
 
@@ -55,7 +72,7 @@ def fix_node_alignment(master_graph_dot, num_stages):
     return modified_dot_content
 
 
-class ResultGraph:
+class ResultGraph(AbstractResultGraph):
     def __init__(self):
         self.master_graph = pgv.AGraph(strict=True, directed=True, compound=True)
         self.stage_graph = None
@@ -113,21 +130,3 @@ class ResultGraph:
         # Writing to the file
         with open(filename, "w") as file:
             file.write(modified_dot_content)
-
-
-class NullResultGraph:
-    def add_subgraph(self, stage):
-        pass
-
-    def add_node(self, node_id, stage, label, health, instance_count):
-        pass
-
-    def add_edge(self, edge, stage):
-        pass
-
-    # Function to create HTML-like label for the info box
-    def add_info_box(self, K, MAX_K, N, P):
-        pass
-
-    def write(self, num_stages, filename):
-        pass

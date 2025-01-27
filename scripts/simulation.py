@@ -6,19 +6,21 @@ import sys
 import numpy as np
 import pygraphviz as pgv
 from rbn import kauffman
-from rbn.result_graph import ResultGraph, NullResultGraph
-from rbn.result_text import ResultText, NullResultText
+from rbn.result_graph import ResultGraph, AbstractResultGraph
+from rbn.result_text import ResultText, AbstractResultText
 
 
-def normalize_frozenset(fset):
+def normalize_frozenset(frozen_set_instance):
     """Convert frozenset into a sorted tuple for consistent ordering."""
-    return tuple(sorted(fset))
+    return tuple(sorted(frozen_set_instance))
 
 
 def normalize_tuple(cyclic_tuple):
     """Normalize a tuple of frozensets as a cycle."""
     # First, normalize each frozenset to ensure consistent order
-    normalized_parts = tuple(normalize_frozenset(fset) for fset in cyclic_tuple)
+    normalized_parts = tuple(
+        normalize_frozenset(frozen_set_instance) for frozen_set_instance in cyclic_tuple
+    )
 
     # Generate all rotations of the tuple
     rotations = [
@@ -61,7 +63,7 @@ def calculate_average_health_by_type(node_health_stats):
 
 
 def evaluate_and_update_health(expanded_network, node_health_stats, states):
-    # Udate individual node health
+    # Update individual node health
     for node in expanded_network:
         node_health_stats[node].append(states[node])
 
@@ -134,6 +136,13 @@ def update_states(expanded_network, network, states):
     return new_states
 
 
+def update_attractor_counts(attractor_counts, states):
+    # Update attractor counts
+    attractor_state = normalize_tuple(tuple(states))
+    attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
+    return attractor_counts
+
+
 class Simulation:
     def __init__(self, num_stages):
         self.num_stages = num_stages
@@ -141,16 +150,14 @@ class Simulation:
         self.num_steps_per_run = 40
 
     def run(
-        self, network, result_graph=NullResultGraph(), result_text=NullResultText()
+        self,
+        network,
+        result_graph=AbstractResultGraph(),
+        result_text=AbstractResultText(),
     ):
         expanded_network = network.expanded_network
 
         healthy_node_states = {node: True for node in expanded_network}
-
-        # Identify health indicator nodes based on their labels
-        health_indicator_nodes = [
-            node for node in expanded_network if node.startswith("Health")
-        ]
 
         total_on_states = 0
         total_evaluations = 0
@@ -171,7 +178,6 @@ class Simulation:
                 ) = self.run_single_simulation(
                     attractor_counts,
                     expanded_network,
-                    health_indicator_nodes,
                     healthy_node_states,
                     network,
                     node_health_stats,
@@ -211,7 +217,6 @@ class Simulation:
         self,
         attractor_counts,
         expanded_network,
-        health_indicator_nodes,
         healthy_node_states,
         network,
         node_health_stats,
@@ -242,26 +247,16 @@ class Simulation:
         evaluate_and_update_health(expanded_network, node_health_stats, states)
         if attractor_found:
             # Process the found attractor sequence
-            attractor_counts = self.update_attractor_counts(
+            attractor_counts = update_attractor_counts(
                 attractor_counts, attractor_sequence
             )
         return attractor_counts, total_evaluations, total_on_states, attractor_found
-
-    def update_attractor_counts(self, attractor_counts, states):
-        # Update attractor counts
-        attractor_state = normalize_tuple(tuple(states))
-        attractor_counts[attractor_state] = attractor_counts.get(attractor_state, 0) + 1
-        return attractor_counts
 
 
 def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
     node_to_state = {key: value for key, value in state}
     # Add nodes with HTML-style labels including health and instance count
     for node_id, label in network.original_label_map.items():
-        # Find the instance count by matching the full label
-        instance_count = network.instance_counts.get(
-            label, 1
-        )  # Default to 1 if not found
         color = "green"
         if not node_to_state[label]:
             color = "red"
@@ -280,15 +275,15 @@ def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
 
 
 def create_attractor_graph(attractors, network):
-    G = pgv.AGraph(directed=True)
-    G.graph_attr["rankdir"] = "LR"
+    g = pgv.AGraph(directed=True)
+    g.graph_attr["rankdir"] = "LR"
     attractor_id = 0
     total = sum(attractors.values())
 
     for attractor, count in attractors.items():
         subgraph_label = f"Attractor encountered {count} times. Attractor dominance {round((count / total)*100, 2)}%"
         subgraph_name = f"cluster_{attractor_id}"
-        subG = G.add_subgraph(
+        sub_g = g.add_subgraph(
             name=subgraph_name,
             label=subgraph_label,
             style="filled",
@@ -301,42 +296,38 @@ def create_attractor_graph(attractors, network):
             state_graph_name = f"cluster_{attractor_id}_state_{state_id}"
             state_name = f"attractor_{attractor_id}_state_{state_id}"
 
-            subA = subG.add_subgraph(
+            sub_a = sub_g.add_subgraph(
                 name=state_graph_name,
                 label=state_graph_label,
                 style="filled",
                 fillcolor="lightblue",
             )
             if len(states) > 1:
-                subA.add_node(state_name, shape="none", label="", margin="0")
+                sub_a.add_node(state_name, shape="none", label="", margin="0")
 
-            record_state_as_graph(attractor_id, state_id, state, network, subA)
+            record_state_as_graph(attractor_id, state_id, state, network, sub_a)
         if len(states) > 1:
             for i in range(0, len(states) - 1):
-                subG.add_edge(
+                sub_g.add_edge(
                     f"attractor_{attractor_id}_state_{i}",
                     f"attractor_{attractor_id}_state_{i + 1}",
                 )
-            subG.add_edge(
+            sub_g.add_edge(
                 f"attractor_{attractor_id}_state_{len(states)-1}",
                 f"attractor_{attractor_id}_state_0",
             )
         attractor_id += 1
-    G.layout(prog="dot")
-    G.write("attractors_graph.dot")
+    g.layout(prog="dot")
+    g.write("attractors_graph.dot")
 
 
-# Assuming attractors is your dictionary of attractors
-
-
-def random_sim_kauffman(dot_file):
-    network = kauffman.KauffmanNetwork(dot_file)
+def random_sim_kauffman(output_dot_file):
+    network = kauffman.KauffmanNetwork(output_dot_file)
     result_graph = ResultGraph()
     result_text = ResultText()
     num_stages = 16
     simulation = Simulation(num_stages)
     simulation.run(network, result_graph, result_text)
-
     result_graph.write(num_stages, "combined_stages.dot")
 
 

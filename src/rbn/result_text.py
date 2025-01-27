@@ -1,4 +1,17 @@
-class ResultText:
+class AbstractResultText:
+    def print_stage_summary(self, stage, average_type_health):
+        pass
+
+    def print_kauffman_parameters(self, K, MAX_K, N, P):
+        pass
+
+    def print_attractor_summary(
+        self, attractor_counts, runs_with_attractor, runs_no_attractor
+    ):
+        pass
+
+
+class ResultText(AbstractResultText):
     def print_stage_summary(self, stage, average_type_health):
         print(f"\nStage {stage}")
         print("Average Health of Node Types:")
@@ -20,16 +33,3 @@ class ResultText:
         print(
             f"Percentage of runs with attractors: {runs_with_attractor / (runs_with_attractor + runs_no_attractor)}"
         )
-
-
-class NullResultText:
-    def print_stage_summary(self, stage, average_type_health):
-        pass
-
-    def print_kauffman_parameters(self, K, MAX_K, N, P):
-        pass
-
-    def print_attractor_summary(
-        self, attractor_counts, runs_with_attractor, runs_no_attractor
-    ):
-        pass
