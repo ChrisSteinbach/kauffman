@@ -14,9 +14,10 @@ class Attractors:
     def update_attractor_counts(self, states):
         attractor_state = normalize_tuple(tuple(states))
         self.attractor_counts[attractor_state] = (
-                self.attractor_counts.get(attractor_state, 0) + 1
+            self.attractor_counts.get(attractor_state, 0) + 1
         )
         return self.attractor_counts
+
 
 def normalize_frozenset(frozen_set_instance):
     """Convert frozenset into a sorted tuple for consistent ordering."""

@@ -1,3 +1,5 @@
+ - Stop running simulation when no more attractors are discovered
+
  - Add support for redundancy across multiple clusters or datacenters
 
  - Improve the attractor diagram. Show surviving nodes of the state only (i.e.

@@ -221,16 +221,18 @@ def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
         result_graph.add_edge(prefixed_source_id, prefixed_target_id)
 
 
-def create_attractor_graph(attractors, network):
-    g = pgv.AGraph(directed=True)
-    g.graph_attr["rankdir"] = "LR"
-    attractor_id = 0
-    total = attractors.total_runs()
+class AttractorGraph:
+    def __init__(self, network, total_runs):
+        self._network = network
+        self._master_graph = pgv.AGraph(directed=True)
+        self._master_graph.graph_attr["rankdir"] = "LR"
+        self._attractor_id = 0
+        self._total_runs = total_runs
 
-    for attractor, count in attractors.items():
-        subgraph_label = f"Attractor encountered {count} times. Attractor dominance {round((count / total)*100, 2)}%"
-        subgraph_name = f"cluster_{attractor_id}"
-        sub_g = g.add_subgraph(
+    def add_attractor(self, attractor, count):
+        subgraph_label = f"Attractor encountered {count} times. Attractor dominance {round((count / self._total_runs) * 100, 2)}%"
+        subgraph_name = f"cluster_{self._attractor_id}"
+        sub_g = self._master_graph.add_subgraph(
             name=subgraph_name,
             label=subgraph_label,
             style="filled",
@@ -240,8 +242,8 @@ def create_attractor_graph(attractors, network):
         for i, state in enumerate(states):
             state_id = i
             state_graph_label = f"State {state_id}"
-            state_graph_name = f"cluster_{attractor_id}_state_{state_id}"
-            state_name = f"attractor_{attractor_id}_state_{state_id}"
+            state_graph_name = f"cluster_{self._attractor_id}_state_{state_id}"
+            state_name = f"attractor_{self._attractor_id}_state_{state_id}"
 
             sub_a = sub_g.add_subgraph(
                 name=state_graph_name,
@@ -252,20 +254,33 @@ def create_attractor_graph(attractors, network):
             if len(states) > 1:
                 sub_a.add_node(state_name, shape="none", label="", margin="0")
 
-            record_state_as_graph(attractor_id, state_id, state, network, sub_a)
+            record_state_as_graph(
+                self._attractor_id, state_id, state, self._network, sub_a
+            )
         if len(states) > 1:
             for i in range(0, len(states) - 1):
                 sub_g.add_edge(
-                    f"attractor_{attractor_id}_state_{i}",
-                    f"attractor_{attractor_id}_state_{i + 1}",
+                    f"attractor_{self._attractor_id}_state_{i}",
+                    f"attractor_{self._attractor_id}_state_{i + 1}",
                 )
             sub_g.add_edge(
-                f"attractor_{attractor_id}_state_{len(states)-1}",
-                f"attractor_{attractor_id}_state_0",
+                f"attractor_{self._attractor_id}_state_{len(states) - 1}",
+                f"attractor_{self._attractor_id}_state_0",
             )
-        attractor_id += 1
-    g.layout(prog="dot")
-    g.write("attractors_graph.dot")
+        self._attractor_id += 1
+
+    def write(self, filename):
+        self._master_graph.layout(prog="dot")
+        self._master_graph.write(filename)
+
+
+def create_attractor_graph(attractors, network):
+    attractor_graph = AttractorGraph(network, attractors.total_runs())
+
+    for attractor, count in attractors.items():
+        attractor_graph.add_attractor(attractor, count)
+
+    attractor_graph.write("attractor_graph.dot")
 
 
 def random_sim_kauffman(output_dot_file):
