@@ -4,20 +4,21 @@ import os
 import random
 import sys
 import time
+from functools import reduce
 
 from rbn import kauffman
 from rbn.kauffman import update_states
 
 
 def debug_message(message):
-    with open("/tmp/debug.log", "a") as log_file:
+    with open("/tmp/debug.log", "a", encoding="utf-8") as log_file:
         log_file.write(f"{message}\n")
 
 
 def initialise_node_states(network):
 
     # Prepare a list of nodes that can potentially fail, excluding health indicators
-    potential_nodes_to_fail = [node for node in network.expanded_network]
+    potential_nodes_to_fail = list(network.expanded_network)
 
     states = {node: True for node in network.expanded_network}
 
@@ -39,7 +40,7 @@ def display_columns(stdscr, states_history, node_states, terminal_width, padding
     )  # Adjust for row numbers
     row_names = {}
     index = 0
-    for key, value in node_states.items():
+    for key, _ in node_states.items():
         row_names[index] = key
         index = index + 1
 
@@ -60,7 +61,7 @@ def display_columns(stdscr, states_history, node_states, terminal_width, padding
 
 def list_node_states(node_states):
     current_state = []
-    for key, value in node_states.items():
+    for value in node_states.values():
         current_state.append(value)
     return current_state
 
@@ -96,10 +97,8 @@ def loop(stdscr, network):
     # Get terminal dimensions
     terminal_width = curses.COLS
     max_row_number = len(current_state)
-    max_name_length = 0
-    for name in node_states.keys():
-        if len(name) > max_name_length:
-            max_name_length = len(name)
+    max_name_length = reduce(lambda x, y: max(x, len(y)), node_states.keys(), 0)
+
     padding = (
         len(str(max_row_number)) + max_name_length + 4
     )  # Space for row number and extra space
@@ -117,7 +116,7 @@ def loop(stdscr, network):
         stdscr.addstr(
             len(current_state) + 2,
             0,
-            "Enter row numbers separated by commas (or ranges with '-') to flip states (or 'q' to quit): ",
+            "Row numbers separated by commas or ranges with '-' to flip states, or 'q' to quit, 'a' for all, 'n' for none: ",
         )
 
         stdscr.move(len(current_state) + 3, 0)
@@ -130,19 +129,30 @@ def loop(stdscr, network):
 
             if key == ord("q"):
                 break
-            elif key in (curses.KEY_ENTER, 10, 13):  # Enter key
+
+            if key == ord("a"):
+                # Set all nodes to True
+                for key in node_states.keys():
+                    node_states[key] = True
+
+            if key == ord("n"):
+                # Set all nodes to False
+                for key in node_states.keys():
+                    node_states[key] = False
+
+            if key in (curses.KEY_ENTER, 10, 13):  # Enter key
                 # Parse and process the input buffer
                 rows_to_flip = parse_input(input_buffer)
                 for row_index in rows_to_flip:
                     if 0 <= row_index < len(current_state):
                         current_state[row_index] = not current_state[row_index]
                 index = 0
-                for key, value in node_states.items():
+                for key in node_states.keys():
                     node_states[key] = current_state[index]
                     index = index + 1
 
                 input_buffer = ""  # Clear the buffer after processing
-            elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
+            elif key in (curses.KEY_BACKSPACE, 127):  # Backspace key
                 input_buffer = input_buffer[:-1]  # Remove last character
             elif 48 <= key <= 57 or key in (44, 45):  # Digits (0-9), comma, or hyphen
                 input_buffer += chr(key)
