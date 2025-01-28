@@ -133,7 +133,6 @@ class Simulation:
                     attractor_found,
                 ) = self.run_single_simulation(
                     attractors,
-                    expanded_network,
                     healthy_node_states,
                     network,
                     node_health_stats,
@@ -172,7 +171,6 @@ class Simulation:
     def run_single_simulation(
         self,
         attractors,
-        expanded_network,
         healthy_node_states,
         network,
         node_health_stats,
@@ -180,12 +178,13 @@ class Simulation:
         total_evaluations,
         total_on_states,
     ):
+        expanded_network = network.expanded_network
         state_history = []
         attractor_found = False
         attractor_sequence = []
         states = initialise_node_states(healthy_node_states, network, stage)
         # Run the simulation for this stage
-        for step in range(self.num_steps_per_run):
+        for _ in range(self.num_steps_per_run):
             states = update_states(expanded_network, network, states)
 
             # Update the counters for P value calculation
@@ -198,8 +197,8 @@ class Simulation:
                 attractor_sequence = state_history[attractor_index:]
                 attractor_found = True
                 break
-            else:
-                state_history.append(current_state)
+
+            state_history.append(current_state)
         evaluate_and_update_health(expanded_network, node_health_stats, states)
         if attractor_found:
             # Process the found attractor sequence
@@ -208,7 +207,7 @@ class Simulation:
 
 
 def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
-    node_to_state = {key: value for key, value in state}
+    node_to_state = dict(state)
     # Add nodes with HTML-style labels including health and instance count
     for node_id, label in network.original_label_map.items():
         color = "green"
