@@ -7,7 +7,6 @@ import time
 from functools import reduce
 
 from rbn import kauffman
-from rbn.kauffman import update_states
 
 
 def debug_message(message):
@@ -18,9 +17,9 @@ def debug_message(message):
 def initialise_node_states(network):
 
     # Prepare a list of nodes that can potentially fail, excluding health indicators
-    potential_nodes_to_fail = list(network.expanded_network)
+    potential_nodes_to_fail = network.get_expanded_node_list()
 
-    states = {node: True for node in network.expanded_network}
+    states = {node: True for node in network.get_expanded_node_list()}
 
     # Introduce failures randomly among the potential nodes
     nodes_to_fail = random.sample(
@@ -89,7 +88,6 @@ def loop(stdscr, network):
     stdscr.nodelay(True)  # Make getch non-blocking
 
     # Initial state and history
-    expanded_network = network.expanded_network
     node_states = initialise_node_states(network)
     current_state = list_node_states(node_states)
     states_history = [current_state]
@@ -161,7 +159,7 @@ def loop(stdscr, network):
             pass
 
         # Generate a new state and add it to the history
-        node_states = update_states(expanded_network, network, node_states)
+        node_states = network.update_states(node_states)
         current_state = list_node_states(node_states)
         states_history.append(current_state)
 

@@ -6,7 +6,6 @@ import sys
 import numpy as np
 import pygraphviz as pgv
 from rbn import kauffman
-from rbn.kauffman import update_states
 from rbn.result_graph import ResultGraph, AbstractResultGraph
 from rbn.result_text import ResultText, AbstractResultText
 from rbn.attractors import Attractors
@@ -16,7 +15,7 @@ def initialise_node_states(healthy_node_states, network, stage):
     states = healthy_node_states.copy()
 
     # Prepare a list of nodes that can potentially fail, excluding health indicators
-    potential_nodes_to_fail = list(network.expanded_network)
+    potential_nodes_to_fail = network.get_expanded_node_list()
 
     # Introduce failures randomly among the potential nodes
     nodes_to_fail = random.sample(
@@ -42,20 +41,18 @@ def calculate_average_health_by_type(node_health_stats):
     return average_type_health
 
 
-def evaluate_and_update_health(expanded_network, node_health_stats, states):
+def evaluate_and_update_health(network, node_health_stats, states):
     # Update individual node health
-    for node in expanded_network:
+    for node in network.get_expanded_node_list():
         node_health_stats[node].append(states[node])
 
 
 def record_result_as_subgraph(average_type_health, network, result_graph, stage):
     result_graph.add_subgraph(stage)
     # Add nodes with HTML-style labels including health and instance count
-    for node_id, label in network.original_label_map.items():
+    for node_id, label in network.get_node_name_to_type_map():
         # Find the instance count by matching the full label
-        instance_count = network.instance_counts.get(
-            label, 1
-        )  # Default to 1 if not found
+        instance_count = network.get_node_type_instance_count(label)
         health = average_type_health.get(label, 0.5)  # Default health if not found
         result_graph.add_node(node_id, stage, label, health, instance_count)
     # Add edges with prefixed node names
@@ -94,7 +91,7 @@ def normalize_attractor(attractor, network):
                 state_counts[node_type]["True"]
                 / (state_counts[node_type]["True"] + state_counts[node_type]["False"])
             )
-            > network.health_percentage[node_type],
+            > network.health_percentage(node_type),
         )
         for node_type in state_counts
     )
@@ -112,9 +109,7 @@ class Simulation:
         result_graph=AbstractResultGraph(),
         result_text=AbstractResultText(),
     ):
-        expanded_network = network.expanded_network
-
-        healthy_node_states = {node: True for node in expanded_network}
+        healthy_node_states = {node: True for node in network.get_expanded_node_list()}
 
         attractors = Attractors()
         total_on_states = 0
@@ -124,7 +119,7 @@ class Simulation:
 
         for stage in range(self.num_stages):
             # To store individual node health across runs
-            node_health_stats = {node: [] for node in expanded_network}
+            node_health_stats = {node: [] for node in network.get_expanded_node_list()}
 
             for _ in range(self.num_runs_per_stage):
                 (
@@ -178,14 +173,13 @@ class Simulation:
         total_evaluations,
         total_on_states,
     ):
-        expanded_network = network.expanded_network
         state_history = []
         attractor_found = False
         attractor_sequence = []
         states = initialise_node_states(healthy_node_states, network, stage)
         # Run the simulation for this stage
         for _ in range(self.num_steps_per_run):
-            states = update_states(expanded_network, network, states)
+            states = network.update_states(states)
 
             # Update the counters for P value calculation
             total_on_states += sum(states.values())
@@ -199,7 +193,7 @@ class Simulation:
                 break
 
             state_history.append(current_state)
-        evaluate_and_update_health(expanded_network, node_health_stats, states)
+        evaluate_and_update_health(network, node_health_stats, states)
         if attractor_found:
             # Process the found attractor sequence
             attractors.update_attractor_counts(attractor_sequence)
@@ -209,7 +203,7 @@ class Simulation:
 def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
     node_to_state = dict(state)
     # Add nodes with HTML-style labels including health and instance count
-    for node_id, label in network.original_label_map.items():
+    for node_id, label in network.get_node_name_to_type_map():
         color = "green"
         if not node_to_state[label]:
             color = "red"

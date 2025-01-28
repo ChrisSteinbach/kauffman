@@ -10,16 +10,6 @@ def update_node_state(node, states, functions, expanded_network, input_types):
     return functions[node](inputs, types)
 
 
-def update_states(expanded_network, network, states):
-    # Update states based on Boolean functions and adjusted P values
-    new_states = states.copy()
-    for node in expanded_network:
-        new_states[node] = update_node_state(
-            node, states, network.functions, expanded_network, network.input_types
-        )
-    return new_states
-
-
 def output_expanded_network_to_dot(expanded_network, output_filename="expanded.dot"):
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write("digraph ExpandedNetwork {\n")
@@ -36,74 +26,102 @@ def output_expanded_network_to_dot(expanded_network, output_filename="expanded.d
         f.write("}\n")
 
 
+def load_network_from_dot(dot_file):
+    if dot_file.endswith(".dot"):
+        return pgv.AGraph(dot_file)
+
+    return pgv.AGraph(string=dot_file)
+
+
 class KauffmanNetwork:
     def __init__(self, dot_file):
-        if dot_file.endswith(".dot"):
-            self.network = pgv.AGraph(dot_file)
-        else:
-            self.network = pgv.AGraph(string=dot_file)
-
-        self.expanded_network = {}
-        self.functions = {}
-        self.health_percentage = {}
+        self._network = load_network_from_dot(dot_file)
+        self._health_percentage = {}
         self.original_label_map = {}
-        self.instance_counts = {}
+
+        # Private variables
+        self._instance_counts = {}
+        self._input_types = {}
+        self._expanded_network = {}
+        self._functions = {}
         self._load_network()
         self._expand_network()
-        self.input_types = {}
 
         # Calculating total connections (Inputs + Outputs) for each non-health node
-        self.node_connections = {node: 0 for node in self.expanded_network}
+        self._node_connections = {node: 0 for node in self._expanded_network}
 
         # Count Inputs
-        for node in self.node_connections:
-            for source, targets in self.expanded_network.items():
+        for node in self._node_connections:
+            for source, targets in self._expanded_network.items():
                 if node in targets and source:
-                    self.node_connections[node] += 1
-        output_expanded_network_to_dot(self.expanded_network)
+                    self._node_connections[node] += 1
+        output_expanded_network_to_dot(self._expanded_network)
 
-        for node in self.network.nodes():
+        for node in self._network.nodes():
             num_instances = int(node.attr["instances"])
             label = node.attr["label"]
             for i in range(1, num_instances + 1):
                 instance_name = f"{label} {i}"
-                self.input_types[instance_name] = label
+                self._input_types[instance_name] = label
+
+    def get_node_name_to_type_map(self):
+        return self.original_label_map.items()
+
+    def get_node_type_instance_count(self, node_type):
+        # Note: questionable whether default should be 1 here
+        return self._instance_counts.get(node_type, 1)
+
+    def get_expanded_node_list(self):
+        return list(self._expanded_network)
 
     def nodes(self):
-        return self.network.nodes()
+        return self._network.nodes()
 
     def edges(self):
-        return self.network.edges()
+        return self._network.edges()
 
     def get_n(self):
         # N - Total Number of Nodes
-        return len(self.expanded_network)
+        return len(self._expanded_network)
 
     def get_average_k(self):
         n = self.get_n()
-        return sum(self.node_connections.values()) / n if n > 0 else 0
+        return sum(self._node_connections.values()) / n if n > 0 else 0
 
     def get_max_k(self):
         max_k = (
-            max((value, key) for (key, value) in self.node_connections.items())
-            if self.node_connections
+            max((value, key) for (key, value) in self._node_connections.items())
+            if self._node_connections
             else 0
         )
         # print("Max K:" + str(max_k))
         return max_k[0]
 
+    def update_states(self, states):
+        # Update states based on Boolean functions and adjusted P values
+        expanded_network = self._expanded_network
+        new_states = states.copy()
+        for node in expanded_network:
+            new_states[node] = update_node_state(
+                node, states, self._functions, expanded_network, self._input_types
+            )
+        return new_states
+
+    def health_percentage(self, node_type):
+        return self._health_percentage[node_type]
+
     def _load_network(self):
-        for node in self.network.nodes():
+        for node in self._network.nodes():
             node_type = node.attr["label"]
             health_perc = float(node.attr.get("health_perc") or 0)
-            self.health_percentage[node_type] = health_perc
+            self._health_percentage[node_type] = health_perc
 
             # Create a mapping from node names to node types
             self.original_label_map[node.name] = node_type
 
             # Assuming the number of instances is stored in a node attribute 'instances'
             # Default to 1 if 'instances' attribute is not found
-            self.instance_counts[node_type] = int(node.attr.get("instances", 1))
+            self._instance_counts[node_type] = int(node.attr.get("instances", 1))
 
     def _expand_network(self):
         self._expand_nodes()
@@ -111,22 +129,22 @@ class KauffmanNetwork:
 
     def _expand_nodes(self):
         # Expand connections based on expanded nodes
-        for node in self.network.nodes():
+        for node in self._network.nodes():
             num_instances = int(node.attr["instances"])
             func = interpret_function(node.attr["func"])
             for i in range(1, num_instances + 1):
                 instance_name = f"{node.attr['label']} {i}"
-                self.expanded_network[instance_name] = []
-                self.functions[instance_name] = func
+                self._expanded_network[instance_name] = []
+                self._functions[instance_name] = func
 
     def _expand_edges(self):
         # Track the number of connections for each target instance
         target_connections_count = {}
 
-        for target in self.expanded_network.keys():
+        for target in self._expanded_network.keys():
             target_connections_count[target] = 0
 
-        for edge in self.network.edges():
+        for edge in self._network.edges():
             connection_type = edge.attr.get("label") or "1 to n"
 
             # Compile regex patterns for source and target node matching
@@ -134,10 +152,10 @@ class KauffmanNetwork:
             target_pattern = re.compile(f"^{re.escape(edge[1].attr['label'])} \\d+$")
 
             source_instances = [
-                n for n in self.expanded_network if source_pattern.match(n)
+                n for n in self._expanded_network if source_pattern.match(n)
             ]
             target_instances = [
-                n for n in self.expanded_network if target_pattern.match(n)
+                n for n in self._expanded_network if target_pattern.match(n)
             ]
 
             # Attempt to extract a specific ratio from the label, defaulting to the length of target_instances
@@ -156,7 +174,7 @@ class KauffmanNetwork:
             # Distribute connections to target instances with the fewest connections
             for source in source_instances:
                 if self_connected:
-                    self.expanded_network[source].append(source)
+                    self._expanded_network[source].append(source)
                     target_connections_count[source] += 1
                 else:
                     # Sort target instances by their current number of connections, ascending
@@ -165,5 +183,5 @@ class KauffmanNetwork:
                     )
                     # Assign connections to the targets with the fewest connections
                     for target in sorted_targets[:ratio]:
-                        self.expanded_network[source].append(target)
+                        self._expanded_network[source].append(target)
                         target_connections_count[target] += 1  # Update the count
