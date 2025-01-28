@@ -116,7 +116,7 @@ def loop(stdscr, network):
         stdscr.addstr(
             len(current_state) + 2,
             0,
-            "Row numbers separated by commas or ranges with '-' to flip states, or 'q' to quit, 'a' for all, 'n' for none: ",
+            "Row numbers separated by commas or ranges with '-' flip states, 'q' to quit, 'a' for all, 'n' for none: ",
         )
 
         stdscr.move(len(current_state) + 3, 0)
@@ -176,11 +176,11 @@ def loop(stdscr, network):
         time.sleep(0.2)
 
 
-dot_file = None
+DOT_FILE = None
 
 
 def random_sim_kauffman(stdscr):
-    network = kauffman.KauffmanNetwork(dot_file)
+    network = kauffman.KauffmanNetwork(DOT_FILE)
     loop(stdscr, network)
 
 
@@ -191,18 +191,18 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Get the filename from the command-line arguments
-    dot_file = sys.argv[1]
+    DOT_FILE = sys.argv[1]
 
     # Check if the file has a .dot extension
-    if not dot_file.endswith(".dot"):
-        print(f"Error: The file '{dot_file}' does not have a .dot extension.")
+    if not DOT_FILE.endswith(".dot"):
+        print(f"Error: The file '{DOT_FILE}' does not have a .dot extension.")
         sys.exit(1)
 
     # Check if the file exists
-    if not os.path.exists(dot_file):
-        print(f"Error: The file '{dot_file}' does not exist.")
+    if not os.path.exists(DOT_FILE):
+        print(f"Error: The file '{DOT_FILE}' does not exist.")
         sys.exit(1)
 
     # File exists and has .dot extension
-    print(f"File '{dot_file}' is valid and ready for use.")
+    print(f"File '{DOT_FILE}' is valid and ready for use.")
     curses.wrapper(random_sim_kauffman)
