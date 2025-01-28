@@ -38,8 +38,6 @@ class KauffmanNetwork:
         self._network = load_network_from_dot(dot_file)
         self._health_percentage = {}
         self.original_label_map = {}
-
-        # Private variables
         self._instance_counts = {}
         self._input_types = {}
         self._expanded_network = {}
