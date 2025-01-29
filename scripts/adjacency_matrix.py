@@ -1,24 +1,19 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pygraphviz as pgv
 import networkx as nx
 
+matplotlib.use("Qt5Agg")
 
 # Function to determine if a node is a "Health" node
-def is_health_node(node_label):
-    return node_label.startswith("Health")
-
 
 # Load the DOT file
 network = pgv.AGraph("plg_example.dot")
 
 # Step 1: Identify unique node types
 # Assume network is your PyGraphviz graph
-node_types = [
-    node.attr["label"]
-    for node in network.nodes()
-    if not is_health_node(node.attr["label"])
-]
+node_types = [node.attr["label"] for node in network.nodes()]
 node_type_set = set(node_types)  # To check for existence efficiently
 
 # Step 2: Initialize matrix
