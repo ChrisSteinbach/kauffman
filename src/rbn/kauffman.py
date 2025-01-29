@@ -37,7 +37,7 @@ class KauffmanNetwork:
     def __init__(self, dot_file):
         self._network = load_network_from_dot(dot_file)
         self._health_percentage = {}
-        self.original_label_map = {}
+        self._original_label_map = {}
         self._instance_counts = {}
         self._input_types = {}
         self._expanded_network = {}
@@ -63,7 +63,7 @@ class KauffmanNetwork:
                 self._input_types[instance_name] = label
 
     def get_node_name_to_type_map(self):
-        return self.original_label_map.items()
+        return self._original_label_map.items()
 
     def get_node_type_instance_count(self, node_type):
         # Note: questionable whether default should be 1 here
@@ -115,7 +115,7 @@ class KauffmanNetwork:
             self._health_percentage[node_type] = health_perc
 
             # Create a mapping from node names to node types
-            self.original_label_map[node.name] = node_type
+            self._original_label_map[node.name] = node_type
 
             # Assuming the number of instances is stored in a node attribute 'instances'
             # Default to 1 if 'instances' attribute is not found
@@ -136,50 +136,79 @@ class KauffmanNetwork:
                 self._functions[instance_name] = func
 
     def _expand_edges(self):
-        # Track the number of connections for each target instance
-        target_connections_count = {}
-
-        for target in self._expanded_network.keys():
-            target_connections_count[target] = 0
+        # Track the number of connections for each target instance to ensure connections are distributed evenly
+        target_connections_count = self.init_target_connection_counts()
 
         for edge in self._network.edges():
+            source_instances = self.get_source_instances(edge)
+            target_instances = self.get_target_instances(edge)
+
             connection_type = edge.attr.get("label") or "1 to n"
+            ratio, self_connected = self.get_connection_distribution_ratio(
+                connection_type, target_instances
+            )
+            self.distribute_connections(
+                ratio,
+                self_connected,
+                source_instances,
+                target_connections_count,
+                target_instances,
+            )
 
-            # Compile regex patterns for source and target node matching
-            source_pattern = re.compile(f"^{re.escape(edge[0].attr['label'])} \\d+$")
-            target_pattern = re.compile(f"^{re.escape(edge[1].attr['label'])} \\d+$")
+    def init_target_connection_counts(self):
+        target_connections_count = {}
+        for target in self._expanded_network.keys():
+            target_connections_count[target] = 0
+        return target_connections_count
 
-            source_instances = [
-                n for n in self._expanded_network if source_pattern.match(n)
-            ]
-            target_instances = [
-                n for n in self._expanded_network if target_pattern.match(n)
-            ]
+    def get_target_instances(self, edge):
+        target_pattern = re.compile(f"^{re.escape(edge[1].attr['label'])} \\d+$")
+        target_instances = [
+            n for n in self._expanded_network if target_pattern.match(n)
+        ]
+        return target_instances
 
-            # Attempt to extract a specific ratio from the label, defaulting to the length of target_instances
-            match = re.match(r"1 to (\d+)", connection_type)
-            self_connected = False
-            if match:
-                ratio = int(match.group(1))
-            elif connection_type == "1 to self":
-                ratio = 1
-                self_connected = True
+    def get_source_instances(self, edge):
+        source_pattern = re.compile(f"^{re.escape(edge[0].attr['label'])} \\d+$")
+        source_instances = [
+            n for n in self._expanded_network if source_pattern.match(n)
+        ]
+        return source_instances
+
+    def distribute_connections(
+        self,
+        ratio,
+        self_connected,
+        source_instances,
+        target_connections_count,
+        target_instances,
+    ):
+        # Distribute connections to target instances with the fewest connections
+        for source in source_instances:
+            if self_connected:
+                self._expanded_network[source].append(source)
+                target_connections_count[source] += 1
             else:
-                ratio = len(
-                    target_instances
-                )  # Default ratio to the total number of target instances
+                # Sort target instances by their current number of connections, ascending
+                sorted_targets = sorted(
+                    target_instances, key=lambda t: target_connections_count[t]
+                )
+                # Assign connections to the targets with the fewest connections
+                for target in sorted_targets[:ratio]:
+                    self._expanded_network[source].append(target)
+                    target_connections_count[target] += 1  # Update the count
 
-            # Distribute connections to target instances with the fewest connections
-            for source in source_instances:
-                if self_connected:
-                    self._expanded_network[source].append(source)
-                    target_connections_count[source] += 1
-                else:
-                    # Sort target instances by their current number of connections, ascending
-                    sorted_targets = sorted(
-                        target_instances, key=lambda t: target_connections_count[t]
-                    )
-                    # Assign connections to the targets with the fewest connections
-                    for target in sorted_targets[:ratio]:
-                        self._expanded_network[source].append(target)
-                        target_connections_count[target] += 1  # Update the count
+    def get_connection_distribution_ratio(self, connection_type, target_instances):
+        # Attempt to extract a specific ratio from the label, defaulting to the length of target_instances
+        match = re.match(r"1 to (\d+)", connection_type)
+        self_connected = False
+        if match:
+            ratio = int(match.group(1))
+        elif connection_type == "1 to self":
+            ratio = 1
+            self_connected = True
+        else:
+            ratio = len(
+                target_instances
+            )  # Default ratio to the total number of target instances
+        return ratio, self_connected

@@ -1,25 +1,46 @@
 import pygraphviz as pgv
 
 
-def record_state_as_graph(attractor_id, state_id, state, network, result_graph):
-    node_to_state = dict(state)
-    # Add nodes with HTML-style labels including health and instance count
-    for node_id, label in network.get_node_name_to_type_map():
-        color = "green"
-        if not node_to_state[label]:
-            color = "red"
-
-        result_graph.add_node(
-            f"{attractor_id}_{state_id}_{node_id}",
+class StateGraph:
+    def __init__(self, attractor_id, state_id, attractor_subgraph, network):
+        self._network = network
+        self._attractor_id = attractor_id
+        self._state_id = state_id
+        state_graph_label = f"State {state_id}"
+        state_graph_name = f"cluster_{self._attractor_id}_state_{state_id}"
+        self._graph = attractor_subgraph.add_subgraph(
+            name=state_graph_name,
+            label=state_graph_label,
             style="filled",
-            label=label,
-            color=color,
+            fillcolor="lightblue",
         )
-    # Add edges with prefixed node names
-    for edge in network.edges():
-        prefixed_source_id = f"{attractor_id}_{state_id}_{edge[0]}"
-        prefixed_target_id = f"{attractor_id}_{state_id}_{edge[1]}"
-        result_graph.add_edge(prefixed_source_id, prefixed_target_id)
+
+    def record_state_as_graph(self, state, is_cyclic):
+        node_to_state = dict(state)
+        self.add_nodes(node_to_state)
+        self.add_edges()
+        if is_cyclic:
+            state_name = f"attractor_{self._attractor_id}_state_{self._state_id}"
+            self._graph.add_node(state_name, shape="none", label="", margin="0")
+
+    def add_edges(self):
+        for edge in self._network.edges():
+            prefixed_source_id = f"{self._attractor_id}_{self._state_id}_{edge[0]}"
+            prefixed_target_id = f"{self._attractor_id}_{self._state_id}_{edge[1]}"
+            self._graph.add_edge(prefixed_source_id, prefixed_target_id)
+
+    def add_nodes(self, node_to_state):
+        for node_id, label in self._network.get_node_name_to_type_map():
+            color = "green"
+            if not node_to_state[label]:
+                color = "red"
+
+            self._graph.add_node(
+                f"{self._attractor_id}_{self._state_id}_{node_id}",
+                style="filled",
+                label=label,
+                color=color,
+            )
 
 
 class AttractorGraph:
@@ -40,35 +61,29 @@ class AttractorGraph:
             fillcolor="lightgrey",
         )
         states = list(attractor)  # Convert tuple to list for indexing
-        for i, state in enumerate(states):
-            state_id = i
-            state_graph_label = f"State {state_id}"
-            state_graph_name = f"cluster_{self._attractor_id}_state_{state_id}"
-            state_name = f"attractor_{self._attractor_id}_state_{state_id}"
-
-            state_subgraph = attractor_subgraph.add_subgraph(
-                name=state_graph_name,
-                label=state_graph_label,
-                style="filled",
-                fillcolor="lightblue",
+        is_cyclic = len(states) > 1
+        for state_id, state in enumerate(states):
+            state_graph = StateGraph(
+                self._attractor_id, state_id, attractor_subgraph, self._network
             )
-            if len(states) > 1:
-                state_subgraph.add_node(state_name, shape="none", label="", margin="0")
-
-            record_state_as_graph(
-                self._attractor_id, state_id, state, self._network, state_subgraph
-            )
-        if len(states) > 1:
-            for i in range(0, len(states) - 1):
-                attractor_subgraph.add_edge(
-                    f"attractor_{self._attractor_id}_state_{i}",
-                    f"attractor_{self._attractor_id}_state_{i + 1}",
-                )
-            attractor_subgraph.add_edge(
-                f"attractor_{self._attractor_id}_state_{len(states) - 1}",
-                f"attractor_{self._attractor_id}_state_0",
-            )
+            state_graph.record_state_as_graph(state, is_cyclic)
+        if is_cyclic:
+            self.link_states(attractor_subgraph, states)
         self._attractor_id += 1
+
+    def link_states(self, attractor_subgraph, states):
+        for i in range(0, len(states)):
+            attractor_subgraph.add_edge(
+                f"attractor_{self._attractor_id}_state_{i}",
+                f"attractor_{self._attractor_id}_state_{(i + 1) % len(states)}",
+            )
+
+    def add_state(self, attractor_subgraph, state_id, state, states):
+        is_cyclic = len(states) > 1
+        state_graph = StateGraph(
+            self._attractor_id, state_id, attractor_subgraph, self._network
+        )
+        state_graph.record_state_as_graph(state, is_cyclic)
 
     def write(self, filename):
         self._master_graph.layout(prog="dot")
