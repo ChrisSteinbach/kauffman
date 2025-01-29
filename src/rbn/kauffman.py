@@ -33,6 +33,22 @@ def load_network_from_dot(dot_file):
     return pgv.AGraph(string=dot_file)
 
 
+def get_connection_distribution_ratio(connection_type, target_instances):
+    # Attempt to extract a specific ratio from the label, defaulting to the length of target_instances
+    match = re.match(r"1 to (\d+)", connection_type)
+    self_connected = False
+    if match:
+        ratio = int(match.group(1))
+    elif connection_type == "1 to self":
+        ratio = 1
+        self_connected = True
+    else:
+        ratio = len(
+            target_instances
+        )  # Default ratio to the total number of target instances
+    return ratio, self_connected
+
+
 class KauffmanNetwork:
     def __init__(self, dot_file):
         self._network = load_network_from_dot(dot_file)
@@ -144,7 +160,7 @@ class KauffmanNetwork:
             target_instances = self.get_target_instances(edge)
 
             connection_type = edge.attr.get("label") or "1 to n"
-            ratio, self_connected = self.get_connection_distribution_ratio(
+            ratio, self_connected = get_connection_distribution_ratio(
                 connection_type, target_instances
             )
             self.distribute_connections(
@@ -197,18 +213,3 @@ class KauffmanNetwork:
                 for target in sorted_targets[:ratio]:
                     self._expanded_network[source].append(target)
                     target_connections_count[target] += 1  # Update the count
-
-    def get_connection_distribution_ratio(self, connection_type, target_instances):
-        # Attempt to extract a specific ratio from the label, defaulting to the length of target_instances
-        match = re.match(r"1 to (\d+)", connection_type)
-        self_connected = False
-        if match:
-            ratio = int(match.group(1))
-        elif connection_type == "1 to self":
-            ratio = 1
-            self_connected = True
-        else:
-            ratio = len(
-                target_instances
-            )  # Default ratio to the total number of target instances
-        return ratio, self_connected
