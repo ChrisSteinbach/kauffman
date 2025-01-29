@@ -3,16 +3,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pygraphviz as pgv
 import networkx as nx
+from matplotlib.colors import ListedColormap, BoundaryNorm
+import sys
+import os
+
+
+# Check if exactly one argument is passed (excluding the script name)
+if len(sys.argv) != 2:
+    print("Usage: python adjacency_matrix.py <file.dot>")
+    sys.exit(1)
+
+# Get the filename from the command-line arguments
+dot_file = sys.argv[1]
+
+# Check if the file has a .dot extension
+if not dot_file.endswith(".dot"):
+    print(f"Error: The file '{dot_file}' does not have a .dot extension.")
+    sys.exit(1)
+
+# Check if the file exists
+if not os.path.exists(dot_file):
+    print(f"Error: The file '{dot_file}' does not exist.")
+    sys.exit(1)
+
+# File exists and has .dot extension
+print(f"File '{dot_file}' is valid and ready for use.")
+
 
 matplotlib.use("Qt5Agg")
 
-# Function to determine if a node is a "Health" node
-
 # Load the DOT file
-network = pgv.AGraph("plg_example.dot")
+network = pgv.AGraph(dot_file)
 
 # Step 1: Identify unique node types
-# Assume network is your PyGraphviz graph
 node_types = [node.attr["label"] for node in network.nodes()]
 node_type_set = set(node_types)  # To check for existence efficiently
 
@@ -21,14 +44,14 @@ type_index = {node_type: i for i, node_type in enumerate(node_types)}
 matrix_size = len(node_types)
 adj_matrix = np.zeros((matrix_size, matrix_size), dtype=int)
 
-# Populate the adjacency matrix, excluding health nodes
+# Populate the adjacency matrix
 for edge in network.edges():
     source_type = edge[0].attr["label"]
     target_type = edge[1].attr["label"]
     if source_type in node_type_set and target_type in node_type_set:
         adj_matrix[type_index[source_type], type_index[target_type]] = 1
 
-# Assume adj_matrix is your adjacency matrix and node_types is a list of node types
+# Optional: compute in-degree and out-degree
 in_degree_scores = {node_type: 0 for node_type in node_types}
 out_degree_scores = {node_type: 0 for node_type in node_types}
 
@@ -38,7 +61,7 @@ for i, source_type in enumerate(node_types):
             out_degree_scores[source_type] += 1
             in_degree_scores[target_type] += 1
 
-# Convert adjacency matrix to a NetworkX graph
+# Convert adjacency matrix to a NetworkX graph (optional usage)
 G = nx.from_numpy_array(np.array(adj_matrix), create_using=nx.DiGraph)
 
 # Calculate centrality measures
@@ -82,17 +105,49 @@ for i, node_type in enumerate(node_types):
     print(row_format.format(node_type, in_degree, out_degree, closeness, betweenness))
 
 
-# Visualize the matrix
-plt.imshow(adj_matrix, cmap="Greys", interpolation="nearest")
+# -------------------------------------------------------------
+# Create a color matrix to label edges as follows:
+#   0 = no edge
+#   1 = single-direction edge
+#   2 = mutual edge (both directions)
+#   3 = self-loop
+# -------------------------------------------------------------
+color_matrix = np.copy(adj_matrix)
 
-# Add gridlines for clarity
+# Identify mutual edges
+for i in range(matrix_size):
+    for j in range(matrix_size):
+        if adj_matrix[i, j] == 1 and adj_matrix[j, i] == 1:
+            color_matrix[i, j] = 2
+            color_matrix[j, i] = 2
+
+# Identify self-loops
+for i in range(matrix_size):
+    if adj_matrix[i, i] == 1:
+        color_matrix[i, i] = 3
+
+# -------------------------------------------------------------
+# Build a discrete colormap for the 4 categories
+# white -> 0, black -> 1, red -> 2, orange -> 3
+# -------------------------------------------------------------
+cmap = ListedColormap(["white", "black", "red", "orange"])
+bounds = [-0.5, 0.5, 1.5, 2.5, 3.5]
+norm = BoundaryNorm(bounds, cmap.N)
+
+fig = plt.gcf()
+fig.canvas.manager.set_window_title("Adjacency Matrix")
+
+# Plot the adjacency matrix using the color matrix
+plt.imshow(color_matrix, cmap=cmap, norm=norm, interpolation="nearest")
+
+# Add gridlines
 plt.grid(which="both", color="black", linestyle="-", linewidth=0.5)
 
-# Add labels for clarity
-plt.xticks(ticks=range(len(node_types)), labels=node_types, rotation=90)
-plt.yticks(ticks=range(len(node_types)), labels=node_types)
+# Label ticks
+plt.xticks(ticks=range(matrix_size), labels=node_types, rotation=90)
+plt.yticks(ticks=range(matrix_size), labels=node_types)
 
-plt.title("Adjacency Matrix")
 plt.xlabel("Target Node Types")
 plt.ylabel("Source Node Types")
+plt.tight_layout()
 plt.show()
