@@ -80,20 +80,17 @@ def interpret_function(func_str):
         match = re.match(r"(\w+|\d+%)\(([\w ]+)\)", condition)
         if match:
             func, target_type = match.groups()
-            type_inputs = [
-                inputs[i] for i, t in enumerate(input_types) if t == target_type
-            ]
+            type_inputs = group_input_types(input_types, inputs, target_type)
+            return evaluate(func, type_inputs)
+        else:
+            # Global conditions
+            return evaluate(condition, inputs)
 
-            if "%" in func:
-                percentage = int(func.replace("%", ""))
-                return function_map["%"](type_inputs, percentage)
-            elif func in function_map:
-                return function_map[func](type_inputs, None)
-            else:
-                raise ValueError(f"Unknown function: {func}")
+    def group_input_types(input_types, inputs, target_type):
+        return [inputs[i] for i, t in enumerate(input_types) if t == target_type]
 
-        # Global conditions
-        elif "%" in condition:
+    def evaluate(condition, inputs):
+        if "%" in condition:
             percentage = int(condition.replace("%", ""))
             return function_map["%"](inputs, percentage)
         elif condition in function_map:
