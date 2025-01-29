@@ -22,10 +22,6 @@ def create_info_box_label(N, K, MAX_K, P):
     return f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): {N}</TD></TR><TR><TD>K (Avg. Inputs per Node): {K:.2f}</TD></TR><TR><TD>K (Max Inputs per Node): {MAX_K:.2f}</TD></TR><TR><TD>P (Bias in Boolean Functions): {P}</TD></TR></TABLE>>'
 
 
-def is_health_node(node_label):
-    return node_label.startswith("Health")
-
-
 def create_html_label(label, health, instance_count):
     health_percentage = f"{health * 100:.1f}%"
     return f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"><TR><TD>{label}</TD></TR><TR><TD>Health: {health_percentage}</TD></TR><TR><TD>Instances: {instance_count}</TD></TR></TABLE>>'
@@ -90,20 +86,16 @@ class ResultGraph(AbstractResultGraph):
         fill_color = get_node_color(health)  # Calculate graduated color
         html_label = create_html_label(label, health, instance_count)
 
-        # Set penwidth and border color based on whether it's a "Health" node
-        penwidth = 3 if is_health_node(label) else 1
-        border_color = "black" if is_health_node(label) else fill_color
-
         # Prefix node ID with stage number
         prefixed_node_id: str = f"{stage}_{node_id}"
         self.stage_graph.add_node(
             prefixed_node_id,
             label=html_label,
             shape="rectangle",
-            color=border_color,
+            color=fill_color,
             fillcolor=fill_color,
             style="filled",
-            penwidth=penwidth,
+            penwidth=1,
         )
 
     def add_edge(self, edge, stage):
