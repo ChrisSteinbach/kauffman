@@ -87,7 +87,9 @@ class AttractorGraph:
         state_graph.record_state_as_graph(state, is_cyclic)
 
     def add_incidence_matrix(self, incidence_matrix, node_list):
-        incidence_matrix_table = build_html_table(incidence_matrix, node_list, self._network)
+        incidence_matrix_table = build_html_table(
+            incidence_matrix, node_list, self._network
+        )
         self._master_graph.add_node(
             "info_box",
             label=f"<{incidence_matrix_table}>",

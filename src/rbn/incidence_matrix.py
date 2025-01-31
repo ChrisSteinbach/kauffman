@@ -33,7 +33,6 @@ def build_incidence_matrix_from_attractor_counts(attractor_counts):
     return incidence, node_list
 
 
-
 def build_html_table(incidence, node_list, network):
     """
     Returns a string containing the HTML <TABLE> snippet

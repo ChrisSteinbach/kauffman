@@ -87,6 +87,7 @@ class KauffmanNetwork:
 
     def get_node_label(self, node_type):
         return self._type_to_label_map.get(node_type, node_type)
+
     def get_instance_label(self, node_type):
         return self._instance_to_label_map.get(node_type, node_type)
 
@@ -155,7 +156,9 @@ class KauffmanNetwork:
             func = interpret_function(node.attr["func"])
             for i in range(1, num_instances + 1):
                 instance_name = f"{node.name} {i}"
-                self._instance_to_label_map[instance_name] = f"{node.attr.get("label", node.name)} {i}"
+                self._instance_to_label_map[instance_name] = (
+                    f"{node.attr.get("label", node.name)} {i}"
+                )
                 self._expanded_network[instance_name] = []
                 self._functions[instance_name] = func
 
