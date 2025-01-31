@@ -9,7 +9,7 @@ from rbn.attractor_graph import AttractorGraph
 from rbn.result_graph import ResultGraph, AbstractResultGraph
 from rbn.result_text import ResultText, AbstractResultText
 from rbn.attractors import Attractors
-from incidence_matrix import (
+from rbn.incidence_matrix import (
     build_incidence_matrix_from_attractor_counts,
     print_incidence_table,
 )
@@ -160,15 +160,14 @@ class Simulation:
         )
         result_text.print_kauffman_parameters(k, max_k, n, p)
 
-        if attractors.count() < 20:
-            print("Creating attractor graph")
-            create_attractor_graph(attractors, network)
-        result_graph.add_info_box(k, max_k, n, p)
-
-        # 1) Build the incidence matrix
         incidence_matrix, node_list = build_incidence_matrix_from_attractor_counts(
             attractors.attractor_counts.items()
         )
+
+        if attractors.count() < 20:
+            print("Creating attractor graph")
+            create_attractor_graph(attractors, network, incidence_matrix, node_list)
+        result_graph.add_info_box(k, max_k, n, p)
 
         # 2) Print a nicely formatted table
         print()
@@ -212,12 +211,13 @@ class Simulation:
         return total_evaluations, total_on_states, attractor_found
 
 
-def create_attractor_graph(attractors, network):
+def create_attractor_graph(attractors, network, incidence_matrix, node_list):
     attractor_graph = AttractorGraph(network, attractors.total_runs())
 
     for attractor, count in attractors.items():
         attractor_graph.add_attractor(attractor, count)
 
+    attractor_graph.add_incidence_matrix(incidence_matrix, node_list)
     attractor_graph.write("attractors_graph.dot")
 
 

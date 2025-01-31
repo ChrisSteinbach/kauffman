@@ -1,4 +1,5 @@
 import pygraphviz as pgv
+from .incidence_matrix import build_html_table
 
 
 class StateGraph:
@@ -84,6 +85,16 @@ class AttractorGraph:
             self._attractor_id, state_id, attractor_subgraph, self._network
         )
         state_graph.record_state_as_graph(state, is_cyclic)
+
+    def add_incidence_matrix(self, incidence_matrix, node_list):
+        incidence_matrix_table = build_html_table(incidence_matrix, node_list)
+        self._master_graph.add_node(
+            "info_box",
+            label=f"<{incidence_matrix_table}>",
+            shape="note",
+            style="filled",
+            color="lightgrey",
+        )
 
     def write(self, filename):
         self._master_graph.layout(prog="dot")

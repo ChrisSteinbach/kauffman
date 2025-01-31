@@ -8,6 +8,9 @@ src/kauffman.egg-info/dependency_links.txt
 src/kauffman.egg-info/requires.txt
 src/kauffman.egg-info/top_level.txt
 src/rbn/__init__.py
+src/rbn/attractor_graph.py
+src/rbn/attractors.py
+src/rbn/incidence_matrix.py
 src/rbn/kauffman.py
 src/rbn/network_behaviour.py
 src/rbn/result_graph.py
