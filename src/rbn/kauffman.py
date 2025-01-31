@@ -53,7 +53,8 @@ class KauffmanNetwork:
     def __init__(self, dot_file):
         self._network = load_network_from_dot(dot_file)
         self._health_percentage = {}
-        self._original_label_map = {}
+        self._type_to_label_map = {}
+        self._instance_to_label_map = {}
         self._instance_counts = {}
         self._input_types = {}
         self._expanded_network = {}
@@ -73,13 +74,21 @@ class KauffmanNetwork:
 
         for node in self._network.nodes():
             num_instances = int(node.attr["instances"])
-            label = node.attr["label"]
+            label = node.name
             for i in range(1, num_instances + 1):
                 instance_name = f"{label} {i}"
                 self._input_types[instance_name] = label
 
     def get_node_name_to_type_map(self):
-        return self._original_label_map.items()
+        return self._type_to_label_map.items()
+
+    def get_instance_labels(self):
+        return self._instance_to_label_map.values()
+
+    def get_node_label(self, node_type):
+        return self._type_to_label_map.get(node_type, node_type)
+    def get_instance_label(self, node_type):
+        return self._instance_to_label_map.get(node_type, node_type)
 
     def get_node_type_instance_count(self, node_type):
         # Note: questionable whether default should be 1 here
@@ -126,12 +135,10 @@ class KauffmanNetwork:
 
     def _load_network(self):
         for node in self._network.nodes():
-            node_type = node.attr["label"]
+            node_type = node.name
             health_perc = float(node.attr.get("health_perc") or 0)
             self._health_percentage[node_type] = health_perc
-
-            # Create a mapping from node names to node types
-            self._original_label_map[node.name] = node_type
+            self._type_to_label_map[node_type] = node.attr.get("label", node_type)
 
             # Assuming the number of instances is stored in a node attribute 'instances'
             # Default to 1 if 'instances' attribute is not found
@@ -147,7 +154,8 @@ class KauffmanNetwork:
             num_instances = int(node.attr["instances"])
             func = interpret_function(node.attr["func"])
             for i in range(1, num_instances + 1):
-                instance_name = f"{node.attr['label']} {i}"
+                instance_name = f"{node.name} {i}"
+                self._instance_to_label_map[instance_name] = f"{node.attr.get("label", node.name)} {i}"
                 self._expanded_network[instance_name] = []
                 self._functions[instance_name] = func
 
@@ -178,14 +186,14 @@ class KauffmanNetwork:
         return target_connections_count
 
     def get_target_instances(self, edge):
-        target_pattern = re.compile(f"^{re.escape(edge[1].attr['label'])} \\d+$")
+        target_pattern = re.compile(f"^{re.escape(edge[1].name)} \\d+$")
         target_instances = [
             n for n in self._expanded_network if target_pattern.match(n)
         ]
         return target_instances
 
     def get_source_instances(self, edge):
-        source_pattern = re.compile(f"^{re.escape(edge[0].attr['label'])} \\d+$")
+        source_pattern = re.compile(f"^{re.escape(edge[0].name)} \\d+$")
         source_instances = [
             n for n in self._expanded_network if source_pattern.match(n)
         ]

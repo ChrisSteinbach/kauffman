@@ -9,10 +9,7 @@ from rbn.attractor_graph import AttractorGraph
 from rbn.result_graph import ResultGraph, AbstractResultGraph
 from rbn.result_text import ResultText, AbstractResultText
 from rbn.attractors import Attractors
-from rbn.incidence_matrix import (
-    build_incidence_matrix_from_attractor_counts,
-    print_incidence_table,
-)
+from rbn.incidence_matrix import build_incidence_matrix_from_attractor_counts
 
 
 def initialise_node_states(healthy_node_states, network, stage):
@@ -169,9 +166,6 @@ class Simulation:
             create_attractor_graph(attractors, network, incidence_matrix, node_list)
         result_graph.add_info_box(k, max_k, n, p)
 
-        # 2) Print a nicely formatted table
-        print()
-        print_incidence_table(incidence_matrix, node_list)
         return p, attractors.count()
 
     def run_single_simulation(
@@ -225,7 +219,7 @@ def random_sim_kauffman(output_dot_file):
     network = kauffman.KauffmanNetwork(output_dot_file)
     result_graph = ResultGraph()
     result_text = ResultText()
-    num_stages = 16
+    num_stages = 8
     simulation = Simulation(num_stages)
     simulation.run(network, result_graph, result_text)
     result_graph.write(num_stages, "combined_stages.dot")

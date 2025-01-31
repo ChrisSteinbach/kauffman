@@ -31,15 +31,15 @@ class StateGraph:
             self._graph.add_edge(prefixed_source_id, prefixed_target_id)
 
     def add_nodes(self, node_to_state):
-        for node_id, label in self._network.get_node_name_to_type_map():
+        for node_name, node_label in self._network.get_node_name_to_type_map():
             color = "green"
-            if not node_to_state[label]:
+            if not node_to_state[node_name]:
                 color = "red"
 
             self._graph.add_node(
-                f"{self._attractor_id}_{self._state_id}_{node_id}",
+                f"{self._attractor_id}_{self._state_id}_{node_name}",
                 style="filled",
-                label=label,
+                label=node_label,
                 color=color,
             )
 
@@ -87,7 +87,7 @@ class AttractorGraph:
         state_graph.record_state_as_graph(state, is_cyclic)
 
     def add_incidence_matrix(self, incidence_matrix, node_list):
-        incidence_matrix_table = build_html_table(incidence_matrix, node_list)
+        incidence_matrix_table = build_html_table(incidence_matrix, node_list, self._network)
         self._master_graph.add_node(
             "info_box",
             label=f"<{incidence_matrix_table}>",

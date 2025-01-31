@@ -31,7 +31,7 @@ def initialise_node_states(network):
     return states
 
 
-def display_columns(stdscr, states_history, node_states, terminal_width, padding):
+def display_columns(stdscr, states_history, node_states, terminal_width, padding, network):
     """Displays the columns of state history within the terminal width."""
     # Determine the number of rows and columns to display
     num_columns = min(
@@ -49,8 +49,8 @@ def display_columns(stdscr, states_history, node_states, terminal_width, padding
 
     # Print the states row by row with row numbers
     for row in range(len(states_history[0])):
-        row_name = row_names[row]
-        row_number = f"{row + 1} ({row_name})".ljust(padding) + ":"
+        row_name = network.get_instance_label(row_names[row])
+        row_number = f"{row + 1} ({row_name})".ljust(padding)
         stdscr.addstr(row, 0, row_number)
         for col in range(-num_columns, 0):
             state = states_history[col][row]
@@ -95,7 +95,8 @@ def loop(stdscr, network):
     # Get terminal dimensions
     terminal_width = curses.COLS
     max_row_number = len(current_state)
-    max_name_length = reduce(lambda x, y: max(x, len(y)), node_states.keys(), 0)
+    node_labels = network.get_instance_labels()
+    max_name_length = reduce(lambda x, y: max(x, len(y)), node_labels, 0)
 
     padding = (
         len(str(max_row_number)) + max_name_length + 4
@@ -106,7 +107,7 @@ def loop(stdscr, network):
 
     while True:
         # Display the state history as columns without clearing the screen
-        display_columns(stdscr, states_history, node_states, terminal_width, padding)
+        display_columns(stdscr, states_history, node_states, terminal_width, padding, network)
 
         # Display the prompt at the bottom
         stdscr.move(len(current_state) + 2, 0)
