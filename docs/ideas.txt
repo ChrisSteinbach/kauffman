@@ -1,6 +1,9 @@
  - Add a state persistence layer so that individual nodes retain their state
    regardless of conditionals configured on the node
 
+ - Allow perturbation runs to be paused and stepped through. On each step it
+   would be nice if the state graph were displayed.
+
  - Stop running simulation when no more attractors are discovered
 
  - Add support for redundancy across multiple clusters or datacenters

@@ -15,8 +15,8 @@ digraph RBN {
     MIO -> MIO [label="1 to n"];
     MIO -> DRV [label="1 to 4"];
 
-    I -> MIO [label="1 to 1"];
-    I -> I [label="1 to self"];
+    I -> MIO [label="1 to 4"];
+    I -> I [label="1 to n"];
     QF -> QS -> Q [label="1 to n"];
     Q -> SG [label="1 to n"];
     SG -> MIO [label="1 to n"];
