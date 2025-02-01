@@ -15,27 +15,22 @@ def debug_message(message):
 
 
 def initialise_node_states(network):
-
     # Prepare a list of nodes that can potentially fail, excluding health indicators
     potential_nodes_to_fail = network.get_expanded_node_list()
-
-    states = {node: True for node in network.get_expanded_node_list()}
-
+    states = {node: True for node in potential_nodes_to_fail}
     # Introduce failures randomly among the potential nodes
     nodes_to_fail = random.sample(
         potential_nodes_to_fail, random.randint(0, len(potential_nodes_to_fail))
     )
     for node in nodes_to_fail:
         states[node] = False
-
     return states
 
 
 def display_columns(
-    stdscr, states_history, node_states, terminal_width, padding, network
+    stdscr, states_history, node_states, mask, terminal_width, padding, network
 ):
     """Displays the columns of state history within the terminal width."""
-    # Determine the number of rows and columns to display
     num_columns = min(
         len(states_history), terminal_width - padding
     )  # Adjust for row numbers
@@ -43,28 +38,27 @@ def display_columns(
     index = 0
     for key, _ in node_states.items():
         row_names[index] = key
-        index = index + 1
+        index += 1
 
     # Define color pairs for 1 and 0 states
     curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_GREEN)  # Green for True
-    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_RED)  # Red for False
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_RED)        # Red for False
+    curses.init_pair(3, curses.COLOR_MAGENTA, curses.COLOR_MAGENTA)     # For masked nodes (optional)
 
     # Print the states row by row with row numbers
     for row in range(len(states_history[0])):
-        row_name = network.get_instance_label(row_names[row])
-        row_number = f"{row + 1} ({row_name})".ljust(padding)
+        row_label = network.get_instance_label(row_names[row])
+        row_number = f"{row + 1} ({row_label})".ljust(padding)
         stdscr.addstr(row, 0, row_number)
         for col in range(-num_columns, 0):
             state = states_history[col][row]
-            color = curses.color_pair(1 if state else 2)
+            masked = mask[row_names[row]]
+            color = curses.color_pair(3 if masked else 1 if state else 2)
             stdscr.addstr(row, padding + col + num_columns - 1, " ", color)
 
 
 def list_node_states(node_states):
-    current_state = []
-    for value in node_states.values():
-        current_state.append(value)
-    return current_state
+    return [value for value in node_states.values()]
 
 
 def parse_input(input_buffer):
@@ -94,88 +88,87 @@ def loop(stdscr, network):
     current_state = list_node_states(node_states)
     states_history = [current_state]
 
-    # Get terminal dimensions
+    # Initialize a mask dictionary for sticky False states.
+    # For each node instance, the mask is initially False.
+    mask = {node: False for node in network.get_expanded_node_list()}
+
+    # Get terminal dimensions and compute padding for display
     terminal_width = curses.COLS
     max_row_number = len(current_state)
     node_labels = network.get_instance_labels()
     max_name_length = reduce(lambda x, y: max(x, len(y)), node_labels, 0)
-
-    padding = (
-        len(str(max_row_number)) + max_name_length + 4
-    )  # Space for row number and extra space
+    padding = len(str(max_row_number)) + max_name_length + 4
 
     # Input buffer for multi-digit numbers
     input_buffer = ""
 
     while True:
-        # Display the state history as columns without clearing the screen
-        display_columns(
-            stdscr, states_history, node_states, terminal_width, padding, network
-        )
+        # Display the state history
+        display_columns(stdscr, states_history, node_states, mask, terminal_width, padding, network)
 
         # Display the prompt at the bottom
         stdscr.move(len(current_state) + 2, 0)
-        stdscr.clrtoeol()  # Clear the line before writing
+        stdscr.clrtoeol()
         stdscr.addstr(
             len(current_state) + 2,
             0,
-            "Row numbers separated by commas or ranges with '-' flip states, 'q' to quit, 'a' for all, 'n' for none: ",
+            "Enter row numbers (e.g. '1,3-5') to flip state, append 'm' to toggle mask, 'q' to quit, 'a' for all, 'n' for none: ",
         )
-
         stdscr.move(len(current_state) + 3, 0)
-        stdscr.clrtoeol()  # Clear the line before writing stdscr.addstr(f"Input: {input_buffer}")
+        stdscr.clrtoeol()
         stdscr.addstr(f"Input: {input_buffer}")
 
         try:
             # Get user input
             key = stdscr.getch()
-
             if key == ord("q"):
                 break
-
             if key == ord("a"):
-                # Set all nodes to True
-                for key in node_states.keys():
-                    node_states[key] = True
-
+                for k in node_states.keys():
+                    node_states[k] = True
             if key == ord("n"):
-                # Set all nodes to False
-                for key in node_states.keys():
-                    node_states[key] = False
+                for k in node_states.keys():
+                    node_states[k] = False
 
+            if key == ord("m"):
+                # Process mask toggling: remove trailing "m"
+                mask_input = input_buffer[:]
+                rows_to_toggle = parse_input(mask_input)
+                for row_index in rows_to_toggle:
+                    if 0 <= row_index < len(current_state):
+                        # Toggle mask for the corresponding node instance
+                        node_key = list(node_states.keys())[row_index]
+                        mask[node_key] = not mask[node_key]
+                input_buffer = ""
             if key in (curses.KEY_ENTER, 10, 13):  # Enter key
-                # Parse and process the input buffer
+                # Process state flipping normally
                 rows_to_flip = parse_input(input_buffer)
                 for row_index in rows_to_flip:
                     if 0 <= row_index < len(current_state):
                         current_state[row_index] = not current_state[row_index]
                 index = 0
-                for key in node_states.keys():
-                    node_states[key] = current_state[index]
-                    index = index + 1
-
-                input_buffer = ""  # Clear the buffer after processing
-            elif key in (curses.KEY_BACKSPACE, 127):  # Backspace key
-                input_buffer = input_buffer[:-1]  # Remove last character
-            elif 48 <= key <= 57 or key in (44, 45):  # Digits (0-9), comma, or hyphen
+                for k in node_states.keys():
+                    node_states[k] = current_state[index]
+                    index += 1
+                input_buffer = ""
+            elif key in (curses.KEY_BACKSPACE, 127):
+                input_buffer = input_buffer[:-1]
+            elif (48 <= key <= 57) or key in (44, 45):  # digits, comma, hyphen
                 input_buffer += chr(key)
-
         except Exception:
             pass
 
-        # Generate a new state and add it to the history
+        # Update state: generate a new state from the network simulation.
         node_states = network.update_states(node_states)
+        # Apply the mask: if a node is masked, force its state to False.
+        for k in node_states:
+            if mask.get(k, False):
+                node_states[k] = False
         current_state = list_node_states(node_states)
         states_history.append(current_state)
-
-        # Maintain only the required number of columns for scrolling
-        if len(states_history) > terminal_width - 5:  # Adjust for row numbers
+        if len(states_history) > terminal_width - 5:
             states_history.pop(0)
-
-        # Refresh the screen
         stdscr.refresh()
-
-        # Pause slightly before the next iteration
         time.sleep(0.2)
 
 
@@ -188,24 +181,15 @@ def random_sim_kauffman(stdscr):
 
 
 if __name__ == "__main__":
-    # Check if exactly one argument is passed (excluding the script name)
     if len(sys.argv) != 2:
         print("Usage: python perturbations.py <file.dot>")
         sys.exit(1)
-
-    # Get the filename from the command-line arguments
     DOT_FILE = sys.argv[1]
-
-    # Check if the file has a .dot extension
     if not DOT_FILE.endswith(".dot"):
         print(f"Error: The file '{DOT_FILE}' does not have a .dot extension.")
         sys.exit(1)
-
-    # Check if the file exists
     if not os.path.exists(DOT_FILE):
         print(f"Error: The file '{DOT_FILE}' does not exist.")
         sys.exit(1)
-
-    # File exists and has .dot extension
     print(f"File '{DOT_FILE}' is valid and ready for use.")
     curses.wrapper(random_sim_kauffman)

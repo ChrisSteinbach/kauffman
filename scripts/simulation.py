@@ -160,7 +160,7 @@ class Simulation:
 
         if attractors.count() < 20:
             print("Creating attractor graph")
-            create_attractor_graph(attractors, network)
+            create_attractor_graph(attractors, network, k, max_k, n, p)
         result_graph.add_info_box(k, max_k, n, p)
 
         return p, attractors.count()
@@ -202,7 +202,7 @@ class Simulation:
         return total_evaluations, total_on_states, attractor_found
 
 
-def create_attractor_graph(attractors, network):
+def create_attractor_graph(attractors, network, k, max_k, n, p):
     attractor_graph = AttractorGraph(network, attractors.total_runs())
 
     for attractor, count in attractors.items():
@@ -210,6 +210,7 @@ def create_attractor_graph(attractors, network):
         attractor_graph.add_attractor(attractor, attractor_id, count)
 
     attractor_graph.add_incidence_matrix(attractors)
+    attractor_graph.add_info_box(k, max_k, n, p)
     attractor_graph.write("attractors_graph.dot")
 
 

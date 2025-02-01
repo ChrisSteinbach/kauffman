@@ -5,6 +5,8 @@ from .incidence_matrix import (
     build_incidence_matrix_from_attractor_counts,
 )
 
+def create_info_box_label(N, K, MAX_K, P):
+    return f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><TR><TD>N (Total Nodes): {N}</TD></TR><TR><TD>K (Avg. Inputs per Node): {K:.2f}</TD></TR><TR><TD>K (Max Inputs per Node): {MAX_K:.2f}</TD></TR><TR><TD>P (Bias in Boolean Functions): {P}</TD></TR></TABLE>>'
 
 class StateGraph:
     def __init__(self, attractor_id, state_id, attractor_subgraph, network):
@@ -98,8 +100,19 @@ class AttractorGraph:
             incidence_matrix, attractor_ids, self._network
         )
         self._master_graph.add_node(
-            "info_box",
+            "incidence_matrix",
             label=f"<{incidence_matrix_table}>",
+            shape="note",
+            style="filled",
+            color="lightgrey",
+        )
+
+    def add_info_box(self, K, MAX_K, N, P):
+        # Add an info box node
+        info_box_label = create_info_box_label(N, K, MAX_K, P)
+        self._master_graph.add_node(
+            "info_box",
+            label=info_box_label,
             shape="note",
             style="filled",
             color="lightgrey",
