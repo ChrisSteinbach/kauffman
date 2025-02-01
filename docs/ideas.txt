@@ -1,5 +1,3 @@
- - Add support for redundancy across multiple clusters or datacenters
-
  - For perturbations, add a state persistence layer so that individual nodes
    retain their state regardless of conditionals configured on the node
 
