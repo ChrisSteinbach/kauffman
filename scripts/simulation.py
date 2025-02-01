@@ -100,10 +100,10 @@ def normalize_attractor(attractor, network):
 
 
 class Simulation:
-    def __init__(self, num_stages):
+    def __init__(self, num_stages, num_runs, num_steps):
         self.num_stages = num_stages
-        self.num_runs_per_stage = 2000
-        self.num_steps_per_run = 40
+        self.num_runs_per_stage = num_runs
+        self.num_steps_per_run = num_steps
 
     def run(
         self,
@@ -213,14 +213,13 @@ def create_attractor_graph(attractors, network):
     attractor_graph.write("attractors_graph.dot")
 
 
-def random_sim_kauffman(output_dot_file, stages):
+def random_sim_kauffman(output_dot_file, stages, runs, steps):
     network = kauffman.KauffmanNetwork(output_dot_file)
     result_graph = ResultGraph()
     result_text = ResultText()
-    num_stages = stages
-    simulation = Simulation(num_stages)
+    simulation = Simulation(stages, runs, steps)
     simulation.run(network, result_graph, result_text)
-    result_graph.write(num_stages, "combined_stages.dot")
+    result_graph.write(stages, "combined_stages.dot")
 
 
 def main():
@@ -231,11 +230,27 @@ def main():
     parser.add_argument(
         "-s", "--stages", type=int, default=8, help="Number of stages (default: 8)"
     )
+    parser.add_argument(
+        "-r",
+        "--runs",
+        type=int,
+        default=8,
+        help="Number of runs per stage (default: 2000)",
+    )
+    parser.add_argument(
+        "-t",
+        "--steps",
+        type=int,
+        default=8,
+        help="Number of steps per run (default: 40)",
+    )
 
     args = parser.parse_args()
 
     dot_file = args.dot_file
     stages = args.stages
+    runs = args.runs
+    steps = args.steps
 
     # Check if the file has a .dot extension
     if not dot_file.endswith(".dot"):
@@ -250,7 +265,7 @@ def main():
     # File exists and has .dot extension
     print(f"File '{dot_file}' is valid and ready for use with {stages} stages.")
 
-    random_sim_kauffman(dot_file, stages)
+    random_sim_kauffman(dot_file, stages, runs, steps)
 
 
 if __name__ == "__main__":
