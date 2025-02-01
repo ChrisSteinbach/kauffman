@@ -3,5 +3,5 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Run the Python script in the same directory
-python "$SCRIPT_DIR/simulation.py" "$1" && "$SCRIPT_DIR/copy" combined_stages.dot
+python "$SCRIPT_DIR/simulation.py" $* && "$SCRIPT_DIR/copy" combined_stages.dot
 

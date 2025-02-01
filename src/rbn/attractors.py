@@ -1,6 +1,17 @@
+import base64
+import hashlib
+
+
+def short_hash(data):
+    serialized = repr(data).encode("utf-8")
+    digest = hashlib.sha1(serialized).digest()  # Use SHA-1 for a short hash
+    return base64.b32encode(digest)[:8].decode("utf-8")  # Take first 8 chars
+
+
 class Attractors:
     def __init__(self):
         self.attractor_counts = {}
+        self._hashes = {}
 
     def count(self):
         return len(self.attractor_counts)
@@ -11,11 +22,15 @@ class Attractors:
     def items(self):
         return self.attractor_counts.items()
 
+    def get_hash(self, attractor_state):
+        return self._hashes[attractor_state]
+
     def update_attractor_counts(self, states):
         attractor_state = normalize_tuple(tuple(states))
-        self.attractor_counts[attractor_state] = (
-            self.attractor_counts.get(attractor_state, 0) + 1
-        )
+        count = self.attractor_counts.get(attractor_state, 0) + 1
+        self.attractor_counts[attractor_state] = count
+        if count == 1:
+            self._hashes[attractor_state] = short_hash(attractor_state)
         return self.attractor_counts
 
 

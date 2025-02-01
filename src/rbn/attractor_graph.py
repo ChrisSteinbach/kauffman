@@ -1,5 +1,9 @@
 import pygraphviz as pgv
-from .incidence_matrix import build_html_table
+
+from .incidence_matrix import (
+    build_html_table,
+    build_incidence_matrix_from_attractor_counts,
+)
 
 
 class StateGraph:
@@ -52,8 +56,8 @@ class AttractorGraph:
         self._attractor_id = 0
         self._total_runs = total_runs
 
-    def add_attractor(self, attractor, count):
-        subgraph_label = f"Attractor encountered {count} times. Attractor dominance {round((count / self._total_runs) * 100, 2)}%"
+    def add_attractor(self, attractor, attractor_id, count):
+        subgraph_label = f"Attractor #{attractor_id} encountered {count} times. Attractor dominance {round((count / self._total_runs) * 100, 2)}%"
         subgraph_name = f"cluster_{self._attractor_id}"
         attractor_subgraph = self._master_graph.add_subgraph(
             name=subgraph_name,
@@ -86,9 +90,12 @@ class AttractorGraph:
         )
         state_graph.record_state_as_graph(state, is_cyclic)
 
-    def add_incidence_matrix(self, incidence_matrix, node_list):
+    def add_incidence_matrix(self, attractors):
+        incidence_matrix, attractor_ids = build_incidence_matrix_from_attractor_counts(
+            attractors, self._network
+        )
         incidence_matrix_table = build_html_table(
-            incidence_matrix, node_list, self._network
+            incidence_matrix, attractor_ids, self._network
         )
         self._master_graph.add_node(
             "info_box",

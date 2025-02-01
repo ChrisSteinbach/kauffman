@@ -88,6 +88,9 @@ class KauffmanNetwork:
     def get_node_label(self, node_type):
         return self._type_to_label_map.get(node_type, node_type)
 
+    def get_node_types(self):
+        return sorted(self._type_to_label_map.keys())
+
     def get_instance_label(self, node_type):
         return self._instance_to_label_map.get(node_type, node_type)
 

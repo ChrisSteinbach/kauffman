@@ -1,6 +1,3 @@
- - Sync the incidence attractor ids with the graphs either via links or
-   common names
-
  - Add support for redundancy across multiple clusters or datacenters
 
  - Add a state persistence layer so that individual nodes retain their state

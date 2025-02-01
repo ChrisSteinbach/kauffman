@@ -1,25 +1,21 @@
 import numpy as np
 
 
-def build_incidence_matrix_from_attractor_counts(attractor_counts):
+def build_incidence_matrix_from_attractor_counts(attractors, network):
     """
     Build an incidence matrix for attractors listed in attractor_counts.
-    (Same approach as before.)
     """
-    # 1) Gather all unique node names across all attractors
-    all_nodes = set()
-    for states_tuple, _count in attractor_counts:
-        for state in states_tuple:
-            for node_name, value in state:
-                all_nodes.add(node_name)
-    node_list = sorted(all_nodes)
+    attractor_counts = attractors.attractor_counts.items()
+    node_list = network.get_node_types()
 
-    # 2) Initialize the incidence matrix
+    # Initialize the incidence matrix
     incidence = np.zeros((len(attractor_counts), len(node_list)), dtype=int)
+    attractor_ids = {}
 
-    # 3) Fill the incidence matrix
+    # Fill the incidence matrix
     for i, (states_tuple, _count) in enumerate(attractor_counts):
         # Collect possible values for each node across all states in this attractor
+        attractor_ids[i] = attractors.get_hash(states_tuple)
         node_values = {n: set() for n in node_list}
         for state in states_tuple:
             for node_name, val in state:
@@ -30,10 +26,10 @@ def build_incidence_matrix_from_attractor_counts(attractor_counts):
             if node_values[node_name] == {False}:
                 incidence[i, j] = 1
 
-    return incidence, node_list
+    return incidence, attractor_ids
 
 
-def build_html_table(incidence, node_list, network):
+def build_html_table(incidence, attractor_ids, network):
     """
     Returns a string containing the HTML <TABLE> snippet
     for embedding in a Graphviz dot file.
@@ -46,13 +42,14 @@ def build_html_table(incidence, node_list, network):
     grand_total = row_sums.sum()
 
     # Start building the table
-    html = []
-    html.append('<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4">')
+    html = [
+        '<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4">',
+        "<TR>",
+        "<TD><B>Attractor</B></TD>",
+    ]
 
     # Header row
-    html.append("<TR>")
-    html.append("<TD><B>Attractor</B></TD>")
-    for node_name in node_list:
+    for node_name in network.get_node_types():
         node_label = network.get_node_label(node_name)
         html.append(f"<TD><B>{node_label}</B></TD>")
     html.append("<TD><B>RowTotal</B></TD>")
@@ -62,7 +59,7 @@ def build_html_table(incidence, node_list, network):
     for i in range(num_attractors):
         html.append("<TR>")
         # Row label
-        html.append(f"<TD>Attr #{i+1}</TD>")
+        html.append(f"<TD>#{attractor_ids[i]}</TD>")
         # Each cell
         for j in range(num_nodes):
             val = incidence[i, j]
@@ -81,35 +78,3 @@ def build_html_table(incidence, node_list, network):
 
     html.append("</TABLE>")
     return "".join(html)
-
-
-if __name__ == "__main__":
-    # Sample data, mirroring your example structure
-    attractor_counts = [
-        (((("A", True), ("B", True), ("C", True), ("D", True)),), 2512),
-        (((("A", True), ("B", False), ("C", True), ("D", True)),), 815),
-        (
-            (
-                (("A", False), ("B", True), ("C", True), ("D", False)),
-                (("A", True), ("B", True), ("C", False), ("D", True)),
-            ),
-            1650,
-        ),
-        (
-            (
-                (("A", False), ("B", False), ("C", True), ("D", False)),
-                (("A", True), ("B", False), ("C", False), ("D", True)),
-            ),
-            1690,
-        ),
-        (((("A", False), ("B", True), ("C", False), ("D", False)),), 825),
-        (((("A", False), ("B", False), ("C", False), ("D", False)),), 24508),
-    ]
-
-    # 1) Build the incidence matrix
-    incidence_matrix, node_list = build_incidence_matrix_from_attractor_counts(
-        attractor_counts
-    )
-
-    # 2) Print a nicely formatted table
-    print_incidence_table(incidence_matrix, node_list)

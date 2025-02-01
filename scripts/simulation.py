@@ -1,15 +1,16 @@
+import argparse
 import os
 import random
 import re
 import sys
 
 import numpy as np
+
 from rbn import kauffman
 from rbn.attractor_graph import AttractorGraph
+from rbn.attractors import Attractors
 from rbn.result_graph import ResultGraph, AbstractResultGraph
 from rbn.result_text import ResultText, AbstractResultText
-from rbn.attractors import Attractors
-from rbn.incidence_matrix import build_incidence_matrix_from_attractor_counts
 
 
 def initialise_node_states(healthy_node_states, network, stage):
@@ -157,13 +158,9 @@ class Simulation:
         )
         result_text.print_kauffman_parameters(k, max_k, n, p)
 
-        incidence_matrix, node_list = build_incidence_matrix_from_attractor_counts(
-            attractors.attractor_counts.items()
-        )
-
         if attractors.count() < 20:
             print("Creating attractor graph")
-            create_attractor_graph(attractors, network, incidence_matrix, node_list)
+            create_attractor_graph(attractors, network)
         result_graph.add_info_box(k, max_k, n, p)
 
         return p, attractors.count()
@@ -205,35 +202,40 @@ class Simulation:
         return total_evaluations, total_on_states, attractor_found
 
 
-def create_attractor_graph(attractors, network, incidence_matrix, node_list):
+def create_attractor_graph(attractors, network):
     attractor_graph = AttractorGraph(network, attractors.total_runs())
 
     for attractor, count in attractors.items():
-        attractor_graph.add_attractor(attractor, count)
+        attractor_id = attractors.get_hash(attractor)
+        attractor_graph.add_attractor(attractor, attractor_id, count)
 
-    attractor_graph.add_incidence_matrix(incidence_matrix, node_list)
+    attractor_graph.add_incidence_matrix(attractors)
     attractor_graph.write("attractors_graph.dot")
 
 
-def random_sim_kauffman(output_dot_file):
+def random_sim_kauffman(output_dot_file, stages):
     network = kauffman.KauffmanNetwork(output_dot_file)
     result_graph = ResultGraph()
     result_text = ResultText()
-    num_stages = 8
+    num_stages = stages
     simulation = Simulation(num_stages)
     simulation.run(network, result_graph, result_text)
     result_graph.write(num_stages, "combined_stages.dot")
 
 
-if __name__ == "__main__":
+def main():
+    parser = argparse.ArgumentParser(
+        description="Run a simulation on a .dot file with an optional number of stages."
+    )
+    parser.add_argument("dot_file", help="Input Graphviz .dot file")
+    parser.add_argument(
+        "-s", "--stages", type=int, default=8, help="Number of stages (default: 8)"
+    )
 
-    # Check if exactly one argument is passed (excluding the script name)
-    if len(sys.argv) != 2:
-        print("Usage: python simulation.py <file.dot>")
-        sys.exit(1)
+    args = parser.parse_args()
 
-    # Get the filename from the command-line arguments
-    dot_file = sys.argv[1]
+    dot_file = args.dot_file
+    stages = args.stages
 
     # Check if the file has a .dot extension
     if not dot_file.endswith(".dot"):
@@ -246,6 +248,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # File exists and has .dot extension
-    print(f"File '{dot_file}' is valid and ready for use.")
+    print(f"File '{dot_file}' is valid and ready for use with {stages} stages.")
 
-    random_sim_kauffman(dot_file)
+    random_sim_kauffman(dot_file, stages)
+
+
+if __name__ == "__main__":
+    main()
