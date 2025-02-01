@@ -71,20 +71,9 @@ function_map = {
 def interpret_function(func_str):
     """
     Parse the function string and return a function that evaluates it.
-    Supports AND (&) and OR (|) between conditions.
+    Supports grouping with parentheses, in addition to AND (&) and OR (|).
+    Conditions can be global (e.g. "one", "50%") or type-specific (e.g. "one(CPU)").
     """
-
-    # Function to evaluate a single condition
-    def evaluate_condition(condition, inputs, input_types):
-        # Check for type-specific conditions
-        match = re.match(r"(\w+|\d+%)\(([\w ]+)\)", condition)
-        if match:
-            func, target_type = match.groups()
-            type_inputs = group_input_types(input_types, inputs, target_type)
-            return evaluate(func, type_inputs)
-        else:
-            # Global conditions
-            return evaluate(condition, inputs)
 
     def group_input_types(input_types, inputs, target_type):
         return [inputs[i] for i, t in enumerate(input_types) if t == target_type]
@@ -98,19 +87,101 @@ def interpret_function(func_str):
         else:
             raise ValueError(f"Unknown function: {condition}")
 
-    # Parse the function string into conditions with AND (&) and OR (|)
+    def evaluate_condition(condition, inputs, input_types):
+        # Check for type-specific conditions: e.g. one(CPU) or 50%(CPU)
+        match = re.match(r"(\w+|\d+%)\(([\w ]+)\)", condition)
+        if match:
+            func, target_type = match.groups()
+            type_inputs = group_input_types(input_types, inputs, target_type)
+            return evaluate(func, type_inputs)
+        else:
+            # Global condition
+            return evaluate(condition, inputs)
+
+    # --- Tokenizer ---
+    # This simple tokenizer recognizes parentheses, & and | operators, and condition tokens.
+    def tokenize(expr):
+        token_specification = [
+            ("LPAREN", r"\("),
+            ("RPAREN", r"\)"),
+            ("AND", r"&"),
+            ("OR", r"\|"),
+            ("SKIP", r"\s+"),
+            # A condition token is any run of characters that doesn't include whitespace,
+            # &, |, or parentheses; it may also include an optional parenthesized part.
+            ("COND", r"[^&|\(\)\s]+(?:\([^&|\(\)]*\))?"),
+        ]
+        tok_regex = "|".join(
+            f"(?P<{name}>{pattern})" for name, pattern in token_specification
+        )
+        tokens = []
+        for mo in re.finditer(tok_regex, expr):
+            kind = mo.lastgroup
+            value = mo.group()
+            if kind == "SKIP":
+                continue
+            tokens.append((kind, value))
+        return tokens
+
+    # --- Recursive descent parser ---
+    # Grammar:
+    #   expr   := term ( '|' term )*
+    #   term   := factor ( '&' factor )*
+    #   factor := COND | '(' expr ')'
+    def parse_expr(tokens):
+        node, tokens = parse_term(tokens)
+        while tokens and tokens[0][0] == "OR":
+            tokens.pop(0)  # consume OR token
+            right, tokens = parse_term(tokens)
+            node = ("OR", node, right)
+        return node, tokens
+
+    def parse_term(tokens):
+        node, tokens = parse_factor(tokens)
+        while tokens and tokens[0][0] == "AND":
+            tokens.pop(0)  # consume AND token
+            right, tokens = parse_factor(tokens)
+            node = ("AND", node, right)
+        return node, tokens
+
+    def parse_factor(tokens):
+        if not tokens:
+            raise ValueError("Unexpected end of tokens")
+        token = tokens.pop(0)
+        if token[0] == "LPAREN":
+            node, tokens = parse_expr(tokens)
+            if not tokens or tokens[0][0] != "RPAREN":
+                raise ValueError("Missing closing parenthesis")
+            tokens.pop(0)  # Remove RPAREN
+            return node, tokens
+        elif token[0] == "COND":
+            return ("COND", token[1]), tokens
+        else:
+            raise ValueError("Unexpected token: " + str(token))
+
+    # Build the parse tree.
+    tokens = tokenize(func_str)
+    parse_tree, remaining_tokens = parse_expr(tokens)
+    if remaining_tokens:
+        raise ValueError("Unexpected tokens remaining: " + str(remaining_tokens))
+
+    def eval_tree(tree, inputs, input_types):
+        node_type = tree[0]
+        if node_type == "COND":
+            condition_str = tree[1]
+            return evaluate_condition(condition_str, inputs, input_types)
+        elif node_type == "AND":
+            return eval_tree(tree[1], inputs, input_types) and eval_tree(
+                tree[2], inputs, input_types
+            )
+        elif node_type == "OR":
+            return eval_tree(tree[1], inputs, input_types) or eval_tree(
+                tree[2], inputs, input_types
+            )
+        else:
+            raise ValueError("Unknown tree node type: " + str(node_type))
+
     def node_function(inputs, input_types):
-        # Split on OR (|)
-        or_conditions = func_str.split("|")
-        for or_condition in or_conditions:
-            and_conditions = or_condition.split("&")
-            # All AND conditions within this OR group must pass
-            if all(
-                evaluate_condition(cond.strip(), inputs, input_types)
-                for cond in and_conditions
-            ):
-                return True
-        # If none of the OR groups pass, return False
-        return False
+        return eval_tree(parse_tree, inputs, input_types)
 
     return node_function

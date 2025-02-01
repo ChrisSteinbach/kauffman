@@ -234,14 +234,14 @@ def main():
         "-r",
         "--runs",
         type=int,
-        default=8,
+        default=2000,
         help="Number of runs per stage (default: 2000)",
     )
     parser.add_argument(
         "-t",
         "--steps",
         type=int,
-        default=8,
+        default=40,
         help="Number of steps per run (default: 40)",
     )
 

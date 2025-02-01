@@ -1,0 +1,24 @@
+digraph ECommerce {
+    APIGateway [label="API Gateway", func="one(AuthService) & one(CatalogService) & one(OrderService)", instances=2];
+    AuthService [label="Auth Service", func="one", instances=2];
+    CatalogService [label="Catalog Service", func="majority", instances=2];
+    OrderService [label="Order Service", func="majority(OrderService) | one(NotificationService)", instances=3];
+    InventoryService [label="Inventory Service", func="one", instances=2];
+    PaymentService [label="Payment Service", func="one", instances=2];
+    NotificationService [label="Notification Service", func="one", instances=2];
+    Database [label="Database", func="one", instances=2];
+
+    // Edges
+    APIGateway -> AuthService [label="1 to 1"];
+    APIGateway -> CatalogService [label="1 to 1"];
+    APIGateway -> OrderService [label="1 to 1"];
+    OrderService -> InventoryService [label="1 to 1"];
+    OrderService -> PaymentService [label="1 to 1"];
+    PaymentService -> Database [label="1 to n"];
+    CatalogService -> Database [label="1 to n"];
+    InventoryService -> Database [label="1 to n"];
+    NotificationService -> Database [label="1 to n"];
+    AuthService -> Database [label="1 to n"];
+    Database -> Database [label="1 to self"];
+}
+

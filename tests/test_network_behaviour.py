@@ -96,6 +96,18 @@ class TestInterpretFunction(unittest.TestCase):
         # A has a True => pass. But among B => 1/2 => 50% => This is exactly 50%.
         self.assertTrue(func(inputs, types))
 
+    def test_parentheses_group(self):
+        """
+        Test that shows parentheses change the outcome even when input data and conditions are otherwise the same
+        """
+        func = interpret_function("one(A) & (50%(B) | all(C))")
+
+        self.assertFalse(func([False, True, True, True, True], ["A", "B", "B", "C", "C"]))
+
+        func = interpret_function("(one(A) & 50%(B)) | all(C)")
+
+        self.assertTrue(func([False, True, True, True, True], ["A", "B", "B", "C", "C"]))
+
     def test_xor(self):
         """
         Test a simple function string "xor" which means
