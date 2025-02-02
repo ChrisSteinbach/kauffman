@@ -192,6 +192,7 @@ class Simulation:
                 attractor_index = state_history.index(current_state)
                 attractor_sequence = state_history[attractor_index:]
                 attractor_found = True
+                # No point in continuing the simulation once attractor found
                 break
 
             state_history.append(current_state)

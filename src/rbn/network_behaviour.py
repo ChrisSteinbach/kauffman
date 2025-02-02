@@ -50,6 +50,11 @@ def copy_func(inputs, _):
     if len(inputs):
         return inputs[0]
 
+def true_func(inputs, _):
+    return True
+
+def false_func(inputs, _):
+    return False
 
 function_map = {
     "all": all_func,
@@ -64,6 +69,8 @@ function_map = {
     "minority": minority_func,
     "random": random_func,
     "copy": copy_func,
+    "true": true_func,
+    "false": false_func,
     "%": percentage_func,  # Special case for percentages
 }
 
