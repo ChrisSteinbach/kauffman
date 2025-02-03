@@ -135,7 +135,6 @@ def loop(stdscr, network):
                     node_states[k] = False
 
             if key == ord("m"):
-                # Process mask toggling: remove trailing "m"
                 mask_input = input_buffer[:]
                 rows_to_toggle = parse_input(mask_input)
                 for row_index in rows_to_toggle:
