@@ -50,11 +50,14 @@ def copy_func(inputs, _):
     if len(inputs):
         return inputs[0]
 
+
 def true_func(inputs, _):
     return True
 
+
 def false_func(inputs, _):
     return False
+
 
 function_map = {
     "all": all_func,

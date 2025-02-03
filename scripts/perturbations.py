@@ -42,8 +42,10 @@ def display_columns(
 
     # Define color pairs for 1 and 0 states
     curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_GREEN)  # Green for True
-    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_RED)        # Red for False
-    curses.init_pair(3, curses.COLOR_MAGENTA, curses.COLOR_MAGENTA)     # For masked nodes (optional)
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_RED)  # Red for False
+    curses.init_pair(
+        3, curses.COLOR_MAGENTA, curses.COLOR_MAGENTA
+    )  # For masked nodes (optional)
 
     # Print the states row by row with row numbers
     for row in range(len(states_history[0])):
@@ -104,7 +106,9 @@ def loop(stdscr, network):
 
     while True:
         # Display the state history
-        display_columns(stdscr, states_history, node_states, mask, terminal_width, padding, network)
+        display_columns(
+            stdscr, states_history, node_states, mask, terminal_width, padding, network
+        )
 
         # Display the prompt at the bottom
         stdscr.move(len(current_state) + 2, 0)
