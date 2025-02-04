@@ -5,7 +5,7 @@ def build_incidence_matrix_from_attractor_counts(attractors, network):
     """
     Build an incidence matrix for attractors listed in attractor_counts.
     """
-    attractor_counts = attractors.attractor_counts.items()
+    attractor_counts = attractors.items()
     node_list = network.get_node_types()
 
     # Initialize the incidence matrix

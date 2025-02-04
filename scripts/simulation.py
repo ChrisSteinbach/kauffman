@@ -179,27 +179,25 @@ class Simulation:
         attractor_found = False
         attractor_sequence = []
         states = initialise_node_states(healthy_node_states, network, stage)
-        # Run the simulation for this stage
+        triggering_event = frozenset(states.items())
         for _ in range(self.num_steps_per_run):
             states = network.update_states(states)
-
-            # Update the counters for P value calculation
             total_on_states += sum(states.values())
             total_evaluations += len(states)
 
+            # Compute normalized state (or attractor key)
             current_state = normalize_attractor(frozenset(states.items()), network)
+
             if current_state in state_history:
                 attractor_index = state_history.index(current_state)
                 attractor_sequence = state_history[attractor_index:]
                 attractor_found = True
-                # No point in continuing the simulation once attractor found
                 break
 
             state_history.append(current_state)
         evaluate_and_update_health(network, node_health_stats, states)
         if attractor_found:
-            # Process the found attractor sequence
-            attractors.update_attractor_counts(attractor_sequence)
+            attractors.update_attractor_counts(attractor_sequence, triggering_event)
         return total_evaluations, total_on_states, attractor_found
 
 

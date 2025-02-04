@@ -61,7 +61,7 @@ class AttractorGraph:
         self._total_runs = total_runs
 
     def add_attractor(self, attractor, attractor_id, count):
-        subgraph_label = f"Attractor #{attractor_id} encountered {count} times. Attractor dominance {round((count / self._total_runs) * 100, 2)}%"
+        subgraph_label = f"Attractor #{attractor_id}, {count} stressors encountered. Attractor dominance {round((count / self._total_runs) * 100, 2)}%"
         subgraph_name = f"cluster_{self._attractor_id}"
         attractor_subgraph = self._master_graph.add_subgraph(
             name=subgraph_name,

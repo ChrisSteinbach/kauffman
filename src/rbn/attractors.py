@@ -1,6 +1,8 @@
 import base64
 import hashlib
 
+import hyperloglog
+
 
 def short_hash(data):
     serialized = repr(data).encode("utf-8")
@@ -10,28 +12,29 @@ def short_hash(data):
 
 class Attractors:
     def __init__(self):
-        self.attractor_counts = {}
         self._hashes = {}
+        self._trigger_events = {}
 
     def count(self):
-        return len(self.attractor_counts)
+        return len(self._trigger_events)
 
     def total_runs(self):
-        return sum(self.attractor_counts.values())
+        return sum(len(hll) for hll in self._trigger_events.values())
 
     def items(self):
-        return self.attractor_counts.items()
+        return tuple((key, len(value)) for key, value in self._trigger_events.items())
 
     def get_hash(self, attractor_state):
         return self._hashes[attractor_state]
 
-    def update_attractor_counts(self, states):
+    def update_attractor_counts(self, states, triggering_event):
         attractor_state = normalize_tuple(tuple(states))
-        count = self.attractor_counts.get(attractor_state, 0) + 1
-        self.attractor_counts[attractor_state] = count
-        if count == 1:
+        # Create a HyperLogLog counter if needed.
+        if attractor_state not in self._trigger_events:
+            self._trigger_events[attractor_state] = hyperloglog.HyperLogLog(0.01)
             self._hashes[attractor_state] = short_hash(attractor_state)
-        return self.attractor_counts
+        # Record the triggering event (its hash or the event itself)
+        self._trigger_events[attractor_state].add(str(hash(triggering_event)))
 
 
 def normalize_frozenset(frozen_set_instance):
