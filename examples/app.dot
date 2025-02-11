@@ -3,43 +3,27 @@ digraph "" {
 	C	[func=one,
 		instances=1,
 		label=Client];
-	APP_1	[func="one(DB_1) & one(DP_1)",
+	APP	[func="one(DB) & one(DP)",
 		instances=4,
-		label=Application_1];
-	C -> APP_1	[label="1 to n"];
-	APP_2	[func="one(DB_2) & one(DP_2)",
-		instances=4,
-		label=Application_2];
-	C -> APP_2	[label="1 to n"];
-	DP_1	[func=copy,
-		instances=1,
-		label=Deployment_1];
-	DP_1 -> DP_1	[label="1 to self"];
-	DP_2	[func=copy,
-		instances=1,
-		label=Deployment_2];
-	DP_2 -> DP_2	[label="1 to self"];
-	APP_1 -> DP_1	[label="1 to n"];
-	DB_1	[func=one,
+		label=Application];
+	DP	[func=copy,
 		instances=2,
-		label=Disk_1];
-	APP_1 -> DB_1	[label="1 to n"];
-	S_1	[func=copy,
-		instances=6,
-		label=Server_1];
-	APP_1 -> S_1	[label="1 to n"];
-	APP_2 -> DP_2	[label="1 to n"];
-	DB_2	[func=one,
+		label=Deployment];
+	DB	[func=one,
 		instances=2,
-		label=Disk_2];
-	APP_2 -> DB_2	[label="1 to n"];
-	S_2	[func=copy,
+		label=Disk];
+	S	[func=copy,
 		instances=6,
-		label=Server_2];
-	APP_2 -> S_2	[label="1 to n"];
-	DB_1 -> S_1	[label="1 to n"];
-	DB_2 -> S_2	[label="1 to n"];
-	S_1 -> S_1	[label="1 to self"];
-	S_2 -> S_2	[label="1 to self"];
+		label=Server];
+
+	C -> APP	[label="1 to n"];
+
+	APP -> DP	[label="1 to n%2"];
+	APP -> S	[label="1 to n%2"];
+	APP -> DB	[label="1 to n%2"];
+	DB -> S	[label="1 to n%2"];
+
+	S -> S	[label="1 to self"];
+	DP -> DP	[label="1 to self"];
 }
 

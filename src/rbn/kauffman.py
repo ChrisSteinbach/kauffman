@@ -4,6 +4,17 @@ import pygraphviz as pgv
 from .network_behaviour import interpret_function
 
 
+def parse_instance_number(instance_name):
+    """
+    Given an instance name in the format "NodeName X" (with X an integer),
+    return X as an integer. Returns None if parsing fails.
+    """
+    try:
+        return int(instance_name.split()[-1])
+    except (IndexError, ValueError):
+        return None
+
+
 def update_node_state(node, states, functions, expanded_network, input_types):
     inputs = [states[neighbour] for neighbour in expanded_network[node]]
     types = [input_types[neighbour] for neighbour in expanded_network[node]]
@@ -34,7 +45,20 @@ def load_network_from_dot(dot_file):
 
 
 def get_connection_distribution_ratio(connection_type, target_instances):
-    # Attempt to extract a specific ratio from the label, defaulting to the length of target_instances
+    """
+    Examine the connection_type string and return:
+      - ratio (or modulo value),
+      - self_connected (a boolean),
+      - modulo_mode (a boolean indicating if the "n%X" mode is used)
+    """
+    # Check for modulo specifier: "1 to n%X"
+    mod_match = re.match(r"1 to n%(\d+)", connection_type)
+    if mod_match:
+        modulo_value = int(mod_match.group(1))
+        # For modulo mode, ratio is not used; we simply signal modulo_mode=True.
+        return modulo_value, False, True
+
+    # Otherwise, check for a numeric ratio: "1 to (\d+)"
     match = re.match(r"1 to (\d+)", connection_type)
     self_connected = False
     if match:
@@ -46,7 +70,20 @@ def get_connection_distribution_ratio(connection_type, target_instances):
         ratio = len(
             target_instances
         )  # Default ratio to the total number of target instances
-    return ratio, self_connected
+    return ratio, self_connected, False
+
+
+def modulo_filter_targets(modulo_value, src_num, target_instances):
+    # Filter targets: only those with the same modulo remainder.
+    filtered_targets = [
+        target
+        for target in target_instances
+        if (
+            parse_instance_number(target) is not None
+            and parse_instance_number(target) % modulo_value == src_num % modulo_value
+        )
+    ]
+    return filtered_targets
 
 
 class KauffmanNetwork:
@@ -174,15 +211,16 @@ class KauffmanNetwork:
             target_instances = self.get_target_instances(edge)
 
             connection_type = edge.attr.get("label") or "1 to n"
-            ratio, self_connected = get_connection_distribution_ratio(
-                connection_type, target_instances
+            ratio_or_modulo, self_connected, modulo_mode = (
+                get_connection_distribution_ratio(connection_type, target_instances)
             )
             self.distribute_connections(
-                ratio,
+                ratio_or_modulo,
                 self_connected,
                 source_instances,
                 target_connections_count,
                 target_instances,
+                modulo_mode=modulo_mode,
             )
 
     def init_target_connection_counts(self):
@@ -212,18 +250,27 @@ class KauffmanNetwork:
         source_instances,
         target_connections_count,
         target_instances,
+        modulo_mode=False,
     ):
-        # Distribute connections to target instances with the fewest connections
         for source in source_instances:
             if self_connected:
                 self._expanded_network[source].append(source)
                 target_connections_count[source] += 1
             else:
-                # Sort target instances by their current number of connections, ascending
-                sorted_targets = sorted(
-                    target_instances, key=lambda t: target_connections_count[t]
-                )
-                # Assign connections to the targets with the fewest connections
-                for target in sorted_targets[:ratio]:
-                    self._expanded_network[source].append(target)
-                    target_connections_count[target] += 1  # Update the count
+                targets = target_instances
+                if modulo_mode:
+                    modulo_value = ratio
+                    src_num = parse_instance_number(source)
+                    if src_num is None:
+                        continue  # Skip if we can't parse the instance number.
+                    targets = modulo_filter_targets(
+                        modulo_value, src_num, target_instances
+                    )
+                self.allocate_edges(targets, source, target_connections_count)
+
+    def allocate_edges(self, targets, source, target_connections_count):
+        # Sort target instances by their current number of connections, ascending
+        sorted_targets = sorted(targets, key=lambda t: target_connections_count[t])
+        for target in sorted_targets:
+            self._expanded_network[source].append(target)
+            target_connections_count[target] += 1
