@@ -1,0 +1,38 @@
+digraph RBN {
+    C [label="Cluster", fun="copy", instances=1]
+    D [label="Distributor", func="one(C) & one(I)", instances=4];
+    I [label="Ingester", func="one(C) & 50%(I) & one(MIO)", type_condition="50%", instances=4];
+
+
+    QF [label="Query Frontend", func="one(C) & one(QS)", instances=4];
+    QS [label="Query Scheduler", func="one(C) & one(Q)", instances=4];
+    Q [label="Querier", func="one(C) & (one(SG) | one(I))", instances=4];
+    SG [label="Storage Gateway", func="one(C) & one(MIO)", instances=4];
+
+    MIO [label="Minio", func="one(C) & 75%(MIO) & 25%(DRV)", instances=4];
+    DRV [label="Drive", func="one(C) & copy(DRV)", instances=16];
+
+    MIO -> MIO [label="1 to n"];
+    MIO -> DRV [label="1 to 4"];
+
+    D -> I [label="1 to n"];
+    I -> MIO [label="1 to 4"];
+    I -> I [label="1 to n"];
+    QF -> QS -> Q [label="1 to n"];
+    Q -> SG [label="1 to n"];
+    SG -> MIO [label="1 to n"];
+    Q -> I [label="1 to n"]; 
+    DRV -> DRV [label="1 to self"];
+  
+
+    D -> C [label="1 to n"];
+    I -> C [label="1 to n"];
+    QF -> C [label="1 to n"];
+    QS -> C [label="1 to n"];
+    Q -> C [label="1 to n"];
+    SG -> C [label="1 to n"];
+    MIO -> C [label="1 to n"];
+    DRV -> C [label="1 to n"];
+
+    C -> C [label="1 to self"];
+}

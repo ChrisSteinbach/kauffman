@@ -78,11 +78,24 @@ function_map = {
 }
 
 
+def filter_by_modulo(inputs, modulo, group_index):
+    results = []
+    for i in range(len(inputs)):
+        if i % modulo == group_index:
+            results.append(inputs[i])
+    return results
+
+
 def interpret_function(func_str):
     """
     Parse the function string and return a function that evaluates it.
     Supports grouping with parentheses, in addition to AND (&) and OR (|).
-    Conditions can be global (e.g. "one", "50%") or type-specific (e.g. "one(CPU)").
+    Conditions can be global (e.g. "one", "50%") or type-specific.
+    The new syntax is:
+         <func>(<target_type>, mod=<modulo>, group=<group_index>)
+    For example:
+         75%(A, mod=2, group=0)
+         majority(B, mod=3, group=2)
     """
 
     def group_input_types(input_types, inputs, target_type):
@@ -98,18 +111,26 @@ def interpret_function(func_str):
             raise ValueError(f"Unknown function: {condition}")
 
     def evaluate_condition(condition, inputs, input_types):
-        # Check for type-specific conditions: e.g. one(CPU) or 50%(CPU)
-        match = re.match(r"(\w+|\d+%)\(([\w ]+)\)", condition)
+        # Try to match the new syntax with parameters:
+        # e.g., "75%(A, mod=2, group=0)" or "majority(B, mod=3, group=2)"
+        new_regex = r"(\w+|\d+%)\(\s*([A-Za-z0-9_]+)\s*(?:,\s*mod\s*=\s*(\d+)\s*,\s*group\s*=\s*(\d+))?\s*\)"
+        match = re.match(new_regex, condition)
         if match:
-            func, target_type = match.groups()
-            type_inputs = group_input_types(input_types, inputs, target_type)
-            return evaluate(func, type_inputs)
+            func, target_type, modulo, group_index = match.groups()
+            if modulo is not None:
+                modulo = int(modulo)
+                group_index = int(group_index)
+                filtered_inputs = filter_by_modulo(inputs, modulo, group_index)
+            else:
+                # No modulo parameters; select all inputs for the target type.
+                filtered_inputs = [
+                    inputs[i] for i, t in enumerate(input_types) if t == target_type
+                ]
+            return evaluate(func, filtered_inputs)
         else:
-            # Global condition
+            # If no parentheses (or no comma parameters) are present, treat as a global condition.
             return evaluate(condition, inputs)
 
-    # --- Tokenizer ---
-    # This simple tokenizer recognizes parentheses, & and | operators, and condition tokens.
     def tokenize(expr):
         token_specification = [
             ("LPAREN", r"\("),
@@ -133,11 +154,6 @@ def interpret_function(func_str):
             tokens.append((kind, value))
         return tokens
 
-    # --- Recursive descent parser ---
-    # Grammar:
-    #   expr   := term ( '|' term )*
-    #   term   := factor ( '&' factor )*
-    #   factor := COND | '(' expr ')'
     def parse_expr(tokens):
         node, tokens = parse_term(tokens)
         while tokens and tokens[0][0] == "OR":
@@ -169,7 +185,6 @@ def interpret_function(func_str):
         else:
             raise ValueError("Unexpected token: " + str(token))
 
-    # Build the parse tree.
     tokens = tokenize(func_str)
     parse_tree, remaining_tokens = parse_expr(tokens)
     if remaining_tokens:

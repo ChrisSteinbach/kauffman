@@ -175,12 +175,11 @@ class KauffmanNetwork:
         types = (node_type,) * len(inputs)
         return self._node_type_conditions[node_type](inputs, types)
 
-
     def _load_network(self):
         for node in self._network.nodes():
             node_type = node.name
             self._type_to_label_map[node_type] = node.attr.get("label", node_type)
-            type_condition = interpret_function(node.attr["type_condition"] or "one")
+            type_condition = interpret_function(node.attr["type_condition"] or "or")
             self._node_type_conditions[node_type] = type_condition
 
             # Assuming the number of instances is stored in a node attribute 'instances'

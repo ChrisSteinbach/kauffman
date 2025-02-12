@@ -108,6 +108,29 @@ class TestInterpretFunction(unittest.TestCase):
 
         self.assertTrue(func([False, True, True, True, True], ["A", "B", "B", "C", "C"]))
 
+    def test_modulo_selection(self):
+        """
+        Test grouped modulo selection
+        """
+
+        inputs = [False, True, True, False, True, False]
+        types = ["A", "A", "A", "A", "A", "A"]
+
+        func = interpret_function("or(A, mod=3, group=0)")
+        self.assertFalse(func(inputs, types))
+
+        func = interpret_function("or(A, mod=2, group=0)")
+        self.assertTrue(func(inputs, types))
+
+        func = interpret_function("or(A, mod=3, group=1)")
+        self.assertTrue(func(inputs, types))
+
+        func = interpret_function("or(A, mod=3, group=2)")
+        self.assertTrue(func(inputs, types))
+
+        func = interpret_function("and(A, mod=3, group=2)")
+        self.assertFalse(func(inputs, types))
+
     def test_xor(self):
         """
         Test a simple function string "xor" which means

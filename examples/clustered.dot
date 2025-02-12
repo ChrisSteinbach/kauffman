@@ -14,6 +14,7 @@ digraph "" {
 		label=Order_Service];
 	Database	[func=one,
 		instances=9,
+        type_condition="one(Database, mod=3, group=0) | one(Database, mod=3, group=1) | one(Database, mod=3, group=2)",
 		label=Database];
 	InventoryService	[func=one,
 		instances=3,
