@@ -1,5 +1,3 @@
- - Add functions that can act on modulo partitioned groups of nodes
-
  - Use title from graphviz graph in output
 
  - Create a network loader class that partitions all the graphviz stuff from

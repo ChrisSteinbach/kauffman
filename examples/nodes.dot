@@ -1,7 +1,7 @@
 digraph RBN {
     A [label="A", func="copy", instances=1];
     B [label="B", func="copy", instances=3];
-    C [label="C", func="copy", instances=6];
+    C [label="C", func="copy", type_condition="or(C, mod=3, group=0) & or(C, mod=3, group=1) & or(C, mod=3, group=2)", instances=6];
     D [label="D", func="copy", instances=3];
     E [label="E", func="copy", instances=1];
 
