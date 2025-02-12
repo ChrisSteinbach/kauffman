@@ -1,8 +1,8 @@
 digraph RBN {
-    A [label="A", func="copy", instances=1];
-    B [label="B", func="copy", instances=1];
-    C [label="C", func="copy", instances=1];
-    D [label="D", func="copy", instances=1];
+    A [label="A", func="copy"];
+    B [label="B", func="copy"];
+    C [label="C", func="copy"];
+    D [label="D", func="copy"];
 
 
 

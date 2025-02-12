@@ -1,11 +1,11 @@
 digraph DistributedDB {
-    DB1 [label="DB1", func="copy(DB1) & ((one(Net12) & one(DB2)) | (one(Net13) & one(DB3)))", instances=1];
-    DB2 [label="DB2", func="copy(DB2) & ((one(Net12) & one(DB1)) | (one(Net23) & one(DB3)))", instances=1];
-    DB3 [label="DB3", func="copy(DB3) & ((one(Net13) & one(DB1)) | (one(Net23) & one(DB2)))", instances=1];
+    DB1 [label="DB1", func="copy(DB1) & ((one(Net12) & one(DB2)) | (one(Net13) & one(DB3)))"];
+    DB2 [label="DB2", func="copy(DB2) & ((one(Net12) & one(DB1)) | (one(Net23) & one(DB3)))"];
+    DB3 [label="DB3", func="copy(DB3) & ((one(Net13) & one(DB1)) | (one(Net23) & one(DB2)))"];
 
-    Net12 [label="Net 1-2", func="copy", instances=1];
-    Net13 [label="Net 1-3", func="copy", instances=1];
-    Net23 [label="Net 2-3", func="copy", instances=1];
+    Net12 [label="Net 1-2", func="copy"];
+    Net13 [label="Net 1-3", func="copy"];
+    Net23 [label="Net 2-3", func="copy"];
 
     DB1 -> Net12;
 	DB2 -> Net12;

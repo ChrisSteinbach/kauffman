@@ -1,6 +1,6 @@
 digraph RBN {
     D [label="Distributor", func="one", instances=4];
-    I [label="Ingester", func="50%(I) & one(MIO)", health_perc="0.5", instances=4];
+    I [label="Ingester", func="50%(I) & one(MIO)", type_condition="50%", instances=4];
 
     D -> I [label="1 to n"];
 

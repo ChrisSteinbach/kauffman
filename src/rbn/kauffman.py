@@ -89,17 +89,17 @@ def modulo_filter_targets(modulo_value, src_num, target_instances):
 class KauffmanNetwork:
     def __init__(self, dot_file):
         self._network = load_network_from_dot(dot_file)
-        self._health_percentage = {}
         self._type_to_label_map = {}
         self._instance_to_label_map = {}
         self._instance_counts = {}
         self._input_types = {}
         self._expanded_network = {}
         self._functions = {}
+        self._node_type_conditions = {}
         self._load_network()
         self._expand_network()
 
-        # Calculating total connections (Inputs + Outputs) for each non-health node
+        # Calculating total connections (Inputs + Outputs) for each node
         self._node_connections = {node: 0 for node in self._expanded_network}
 
         # Count Inputs
@@ -110,7 +110,7 @@ class KauffmanNetwork:
         output_expanded_network_to_dot(self._expanded_network)
 
         for node in self._network.nodes():
-            num_instances = int(node.attr["instances"])
+            num_instances = int(node.attr["instances"] or 1)
             label = node.name
             for i in range(1, num_instances + 1):
                 instance_name = f"{label} {i}"
@@ -171,19 +171,21 @@ class KauffmanNetwork:
             )
         return new_states
 
-    def health_percentage(self, node_type):
-        return self._health_percentage[node_type]
+    def type_condition(self, inputs, node_type):
+        types = (node_type,) * len(inputs)
+        return self._node_type_conditions[node_type](inputs, types)
+
 
     def _load_network(self):
         for node in self._network.nodes():
             node_type = node.name
-            health_perc = float(node.attr.get("health_perc") or 0)
-            self._health_percentage[node_type] = health_perc
             self._type_to_label_map[node_type] = node.attr.get("label", node_type)
+            type_condition = interpret_function(node.attr["type_condition"] or "one")
+            self._node_type_conditions[node_type] = type_condition
 
             # Assuming the number of instances is stored in a node attribute 'instances'
             # Default to 1 if 'instances' attribute is not found
-            self._instance_counts[node_type] = int(node.attr.get("instances", 1))
+            self._instance_counts[node_type] = int(node.attr.get("instances") or 1)
 
     def _expand_network(self):
         self._expand_nodes()
@@ -192,8 +194,8 @@ class KauffmanNetwork:
     def _expand_nodes(self):
         # Expand connections based on expanded nodes
         for node in self._network.nodes():
-            num_instances = int(node.attr["instances"])
-            func = interpret_function(node.attr["func"])
+            num_instances = int(node.attr["instances"] or 1)
+            func = interpret_function(node.attr["func"] or "copy")
             for i in range(1, num_instances + 1):
                 instance_name = f"{node.name} {i}"
                 self._instance_to_label_map[instance_name] = (

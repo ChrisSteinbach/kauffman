@@ -1,7 +1,7 @@
 digraph RBN {
-    A [label="A", func="xor", instances=1];
-    B [label="B", func="xor", instances=1];
-    C [label="C", func="xor", instances=1];
+    A [label="A", func="xor"];
+    B [label="B", func="xor"];
+    C [label="C", func="xor"];
 
 
 

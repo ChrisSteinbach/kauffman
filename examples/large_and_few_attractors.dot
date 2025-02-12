@@ -1,9 +1,9 @@
 digraph RBN {
-    A [label="A", func="and", instances=1];
-    B [label="B", func="and", instances=1];
-    C [label="C", func="and", instances=1];
-    D [label="D", func="and", instances=1];
-    E [label="E", func="and", instances=1];
+    A [label="A", func="and"];
+    B [label="B", func="and"];
+    C [label="C", func="and"];
+    D [label="D", func="and"];
+    E [label="E", func="and"];
 
     A -> B;
     A -> C;
