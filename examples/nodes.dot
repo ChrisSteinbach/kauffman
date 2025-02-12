@@ -1,0 +1,17 @@
+digraph RBN {
+    A [label="A", func="copy", instances=1];
+    B [label="B", func="copy", instances=3];
+    C [label="C", func="copy", instances=6];
+    D [label="D", func="copy", instances=3];
+    E [label="E", func="copy", instances=1];
+
+
+
+    A -> B [label="1 to n"];
+    B -> C [label="1 to n%3"];
+    C -> D [label="1 to n%3"];
+    D -> E [label="1 to n"];
+    E -> E [label="1 to self"];
+}
+
+

@@ -1,14 +1,13 @@
 import argparse
 import os
 import random
-import re
 import sys
 
 import numpy as np
 
 from rbn import kauffman
 from rbn.attractor_graph import AttractorGraph
-from rbn.attractors import Attractors
+from rbn.attractors import Attractors, normalize_attractor
 from rbn.result_graph import ResultGraph, AbstractResultGraph
 from rbn.result_text import ResultText, AbstractResultText
 
@@ -60,43 +59,6 @@ def record_result_as_subgraph(average_type_health, network, result_graph, stage)
     # Add edges with prefixed node names
     for edge in network.edges():
         result_graph.add_edge(edge, stage)
-
-
-def remove_trailing_integer(input_string):
-    pattern = r".*\s\d+$"
-
-    # Check if the input string matches the pattern.
-    # If it does, remove the last space and the digits following it.
-    if re.match(pattern, input_string):
-        # The regex here matches a space (\s) followed by one or more digits (\d+) at the end of the string ($)
-        # and replaces it with an empty string, effectively removing it.
-        return re.sub(r"\s\d+$", "", input_string)
-
-    # If the input string does not match the pattern, return it unchanged
-    return input_string
-
-
-def normalize_attractor(attractor, network):
-    # Dict to hold counts of True/False states per node type
-    state_counts = {}
-    for node_state in attractor:
-        node_type, state = remove_trailing_integer(node_state[0]), node_state[1]
-        if node_type not in state_counts:
-            state_counts[node_type] = {"True": 0, "False": 0}
-        state_counts[node_type][str(state)] += 1
-
-    # Generate a normalized attractor based on state counts as a percentage healthy
-    return frozenset(
-        (
-            node_type,
-            (
-                state_counts[node_type]["True"]
-                / (state_counts[node_type]["True"] + state_counts[node_type]["False"])
-            )
-            > network.health_percentage(node_type),
-        )
-        for node_type in state_counts
-    )
 
 
 class Simulation:

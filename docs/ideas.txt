@@ -1,3 +1,12 @@
+ - Add functions that can act on modulo partitioned groups of nodes
+
+ - Use title from graphviz graph in output
+
+ - Create a network loader class that partitions all the graphviz stuff from
+   the rest of the code.
+
+ - Start perturbations off all green and add a randomize function instead.
+
  - Allow perturbation runs to be paused and stepped through. On each step it
    would be nice if the state graph were displayed, perhaps in another tmux
    pane
