@@ -1,17 +1,19 @@
 # Kauffman
 
-Kauffman is a Python project containing a set of command-line tools for analyzing software architecture. It leverages concepts like Random Boolean Networks (RBNs) to model and analyze system robustness, stability, and other properties.
+Kauffman is a Python project containing a set of command-line tools for
+analyzing software architecture. It uses Random Boolean Networks (RBNs) to
+model and analyze system robustness, stability, and other properties.
 
 ## Features
 
 - Simulation of Random Boolean Networks (RBNs).
 - Analysis of architecture robustness to perturbations.
 - Tools for generating and visualizing network properties.
-- Command-line interface for running simulations and analyses.
 
 ## Installation
 
-To use the project in a development environment, clone the repository and install it in **editable mode**:
+To use the project in a development environment, clone the repository and
+install it in **editable mode**:
 
 ```bash
 git clone https://github.com/ChrisSteinbach/kauffman.git
@@ -22,38 +24,54 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-This installs the project and its dependencies while allowing you to edit the source code.
+This installs the project and its dependencies while allowing you to edit the
+source code.
 
 ## Requirements
 
  - Python 3.8+
- - Dependencies listed in requirements.txt (installed automatically).
+ - Dependencies listed in requirements.txt (installed as per instructions above).
 
 ## Usage
 
 ### Command-Line Tools
 
-The tools are available as standalone scripts in the scripts/ directory. Here's how to run the main simulation tool:
+The tools are available as standalone scripts in the scripts/ directory. Here's
+how to run the main simulation tool:
 
 ```bash
-./scripts/simulation input_file.txt
+./scripts/simulation input_file.dot
 ```
 
-### Example Usage
+```
+positional arguments:
+  dot_file              Input Graphviz .dot file
 
-1. Prepare your input files (examples can be found in the examples/ directory).
-2. Run the simulation script:
-   ```bash
-   ./scripts/simulation examples/sample_input.txt
-   ```
+options:
+  -h, --help            show this help message and exit
+  -s STAGES, --stages STAGES
+                        Number of stages (default: 8)
+  -r RUNS, --runs RUNS  Number of runs per stage (default: 2000)
+  -t STEPS, --steps STEPS
+                        Number of steps per run (default: 40)
+```
 
-3. View or analyze the output file (e.g., combined_stages.dot) generated in the working directory.
+Note that on Linux and MacOS the simulation script copies the output file to
+the clipboard. From there it can be pasted into a graphviz dot file viewer like
+edotor.net.
+
+And here's how to run the perturbation tool:
+
+```bash
+python ./scripts/perturbations.py input_file.dot
+```
 
 ## Development
 
 ### Running Tests
 
-The project uses pytest for testing. To run the tests, execute the following command:
+The project uses pytest for testing. To run the tests, execute the following
+command:
 
 ```bash
 pytest

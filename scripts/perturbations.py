@@ -15,17 +15,19 @@ def debug_message(message):
 
 
 def initialise_node_states(network):
-    # Prepare a list of nodes that can potentially fail, excluding health indicators
-    potential_nodes_to_fail = network.get_expanded_node_list()
-    states = {node: True for node in potential_nodes_to_fail}
-    # Introduce failures randomly among the potential nodes
+    return {node: True for node in network.get_expanded_node_list()}
+
+def randomise_node_states(states):
+    for node in states.keys():
+        states[node] = True
+
+    # introduce failures randomly
     nodes_to_fail = random.sample(
-        potential_nodes_to_fail, random.randint(0, len(potential_nodes_to_fail))
+        list(states.keys()), random.randint(0, len(states))
     )
     for node in nodes_to_fail:
         states[node] = False
     return states
-
 
 def display_columns(
     stdscr, states_history, node_states, mask, terminal_width, padding, network
@@ -116,7 +118,7 @@ def loop(stdscr, network):
         stdscr.addstr(
             len(current_state) + 2,
             0,
-            "Enter row numbers (e.g. '1,3-5') to flip state, append 'm' to toggle mask, 'q' to quit, 'a' for all, 'n' for none: ",
+            "Enter rows (e.g. '1,3-5') to flip state, append 'm' to toggle mask, 'r' to randomise, 'q' to quit, 'a' for all, 'n' for none: ",
         )
         stdscr.move(len(current_state) + 3, 0)
         stdscr.clrtoeol()
@@ -133,7 +135,8 @@ def loop(stdscr, network):
             if key == ord("n"):
                 for k in node_states.keys():
                     node_states[k] = False
-
+            if key == ord("r"):
+                randomise_node_states(node_states)
             if key == ord("m"):
                 mask_input = input_buffer[:]
                 rows_to_toggle = parse_input(mask_input)
